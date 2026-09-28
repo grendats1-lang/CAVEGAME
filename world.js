@@ -7,8 +7,8 @@ const layerOf=y=>clamp(Math.floor(y/LH),0,NL-1);
 const sealReq=k=>ACTS[ACT].seal[k]||0;
 const barHP=k=>ACT?[0,40,55][k]||40:BAR_HP[k]||14;
 function tileHP(x,y){const t=tAt(x,y),k=layerOf(y);if(TI[t].ore)return TI[LAYERS[k].rock].hp+TI[t].extra;if(t===T.BARRIER)return barHP(k);return TI[t].hp}
-function pickOre(k){const o=LAYERS[k].ores;let tot=0;for(const e of o)tot+=e[1];let r=Math.random()*tot;for(const e of o){r-=e[1];if(r<=0)return TI[e[0]].ore}return TI[o[0][0]].ore}
-const isRock=t=>t===T.DIRT||t===T.STONE||t===T.SLATE||t===T.BASALT||t===T.ANCIENT||t===T.GRAVEL||t===T.ICE||t===T.MYCEL||t===T.VOIDR;
+function pickOre(k,rng=Math.random){const o=LAYERS[k].ores;let tot=0;for(const e of o)tot+=e[1];let r=rng()*tot;for(const e of o){r-=e[1];if(r<=0)return TI[e[0]].ore}return TI[o[0][0]].ore}
+const isRock=t=>t===T.DIRT||t===T.STONE||t===T.SLATE||t===T.BASALT||t===T.ANCIENT||t===T.GRAVEL||t===T.ICE||t===T.MYCEL||t===T.VOIDR||t===T.ROOT;
 
 function genWorld(seed){
  const rng=mulberry(seed),R=()=>rng(),RI=(a,b)=>a+Math.floor(R()*(b-a+1));
@@ -18,7 +18,7 @@ function genWorld(seed){
  const opens=[];for(let k=0;k<NL;k++)opens.push(genLayer(k,R,RI));
  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(x===0||x===MW-1||y===0||y===MH-1)tiles[I(x,y)]=T.BEDROCK;
  for(let k=0;k<NL;k++)populate(k,opens[k],R,RI);
- mm=document.createElement('canvas');mm.width=MW;mm.height=MH;mmx=mm.getContext('2d');mmx.fillStyle='#000';mmx.fillRect(0,0,MW,MH);
+ mm=document.createElement('canvas');mm.width=MW;mm.height=MH;mmx=mm.getContext('2d');mmx.fillStyle='#000';mmx.fillRect(0,0,MW,MH);worldExpansion(seed);
 }
 
 function genLayer(k,R,RI){
@@ -71,7 +71,7 @@ function populate(k,list,R,RI){
  // sealed caches
  for(let n=RI(2,3);n>0;n--){for(let tr=0;tr<40;tr++){const x=RI(3,MW-6),y=RI(top+2,last?y1-32:y1-5);let ok=true;for(let j=-2;j<=3&&ok;j++)for(let i=-2;i<=4;i++)if(!isRock(tAt(x+i,y+j))){ok=false;break}if(!ok)continue;for(let j=0;j<2;j++)for(let i=0;i<3;i++)setT(x+i,y+j,T.AIR);setT(x+1,y,T.CHEST);break}}
  // fallen miners
- for(let n=RI(1,2);n>0;n--){const i=rOpen(10);if(i<0)continue;decor[i]=8;const x=(i%MW+.5)*TS,y=(((i/MW)|0)+.5)*TS;for(let m=RI(2,3);m>0;m--)gItems.push({id:pickOre(k),x:x+rnd(-6,6),y:y+rnd(-6,6)});if(R()<.5)gItems.push({id:'oil',x,y:y+4});if(R()<.3)gItems.push({id:'bolts',x:x+4,y})}
+ for(let n=RI(1,2);n>0;n--){const i=rOpen(10);if(i<0)continue;decor[i]=8;const x=(i%MW+.5)*TS,y=(((i/MW)|0)+.5)*TS;for(let m=RI(2,3);m>0;m--)gItems.push({id:pickOre(k,R),x:x+(R()-.5)*12,y:y+(R()-.5)*12});if(R()<.5)gItems.push({id:'oil',x,y:y+4});if(R()<.3)gItems.push({id:'bolts',x:x+4,y})}
  // ancient shrine (Old Mine, bottom layer)
  if(ACT===0&&k===4){const sw=11,sh=9,sx=RI(6,MW-sw-6),sy=RI(top+8,top+16),mx=sx+(sw>>1),my=sy+(sh>>1);
   for(let j=0;j<sh;j++)for(let i=0;i<sw;i++){const e=i===0||j===0||i===sw-1||j===sh-1;setT(sx+i,sy+j,e?T.BRICK:T.AIR);if(!e)decor[I(sx+i,sy+j)]=0}
@@ -103,7 +103,7 @@ function populate(k,list,R,RI){
 // ---------- pixel painter ----------
 const C3=[0,0,0],D3=[0,0,0];
 const wallish=t=>TI[t].solid&&t!==T.CHASM&&t!==T.CHEST;
-function qz(s,px,py){return Math.round((s+BAYER[(py&3)*4+(px&3)]*.1)*8)/8}
+function qz(s,px,py){return Math.round((s+BAYER[(py&3)*4+(px&3)]*.025)*8)/8}
 function dp(r,g,b){D3[0]=r;D3[1]=g;D3[2]=b;return D3}
 function wallBase(t,k){switch(t){case T.DIRT:return[112,88,64];case T.STONE:return ACT===0&&k===0?[110,104,96]:[104,100,94];case T.GRAVEL:return[104,94,82];case T.BARRIER:return ACT?[40,44,54]:[52,52,58];case T.BEDROCK:return[24,22,23];case T.WOOD:return[106,76,46];case T.BRICK:return ACT?[70,64,84]:[92,74,62];default:return LAYERS[k].wall}}
 function wallPx(t,k,wx,wy,px,py,nb){
@@ -149,17 +149,19 @@ function decorPx(dc,k,wx,wy,px,py){const w=LAYERS[k].wall;
  case 14:{if(px>=4&&px<=11&&py>=7&&py<=11)return py===7?(ACT?dp(130,100,190):dp(190,90,36)):dp(84,66,48);return null}}
  return null}
 function floorPx(k,wx,wy,px,py,nb,t,dc,fl){
- const L=LAYERS[k];let b=L.floor,s=.84+fbm(wx/9,wy/9,11)*.32+(ih(wx,wy,12)-.5)*.08;
- if(ih(wx>>1,wy>>1,13)>.965)s+=.2;else if(ih(wx>>1,wy>>1,14)>.97)s-=.2;
+ const L=LAYERS[k];let b=L.floor,s=.84+fbm(wx/9,wy/9,11)*.32+(ih(wx,wy,12)-.5)*.025;
+ if(ih(wx>>1,wy>>1,13)>.991)s+=.2;else if(ih(wx>>1,wy>>1,14)>.993)s-=.2;
  if(Math.abs(vn(wx/6,wy/6,120)-.5)<.012)s*=.7;
  const pc=ih(Math.floor(wx/3),Math.floor(wy/3),121);if(pc>.9){const ox=wx%3,oy=wy%3;if(ox<2&&oy<2)s+=.15;else if(oy===2&&ox>0)s-=.12}
  s-=Math.max(0,fbm(wx/2.5,wy/2.5,122)-.7)*.5;
  if(nb){if(nb.U&&py<6)s*=.5+py*.08;if(nb.L&&px<3)s*=.72+px*.09;if(nb.R&&px>12)s*=.72+(15-px)*.09;if(nb.D&&py>13)s*=.85;if(!nb.U&&!nb.L&&nb.UL&&px<3&&py<4)s*=.78;if(!nb.U&&!nb.R&&nb.UR&&px>12&&py<4)s*=.78}else s*=.55;
- if(t===T.WATER){b=[26,38,46];s=.8+fbm(wx/6,wy/6,40)*.3;if(nb&&nb.U&&py<4)s*=.6}
+ if(t===T.SAP){b=[137,91,32];s=.85+fbm(wx/12,wy/12,43)*.25}
+ else if(t===T.WATER){b=[26,38,46];s=.8+fbm(wx/6,wy/6,40)*.3;if(nb&&nb.U&&py<4)s*=.6}
  else if(t===T.ICEFLOOR){b=[104,124,136];s=.85+fbm(wx/10,wy/10,123)*.25;if(((wx-wy)%13+13)%13===0)s+=.2;if(Math.abs(vn(wx/5,wy/5,124)-.5)<.015)s*=.75;if(nb&&nb.U&&py<4)s*=.7}
  else if(t===T.LAVA){const n=fbm(wx/5,wy/5,41);if(n>.62){b=[46,30,26];s=.9}else{b=[168,62,22];s=.75+n*.5}}
  else if(t===T.LIFT){b=[78,72,62];const e=px<2||px>13||py<2||py>13;s=e?1.1:((px&3)===0||(py&3)===0)?.55:.9;if(nb&&nb.U&&py<6)s*=.8}
  s=qz(s,px,py);let r=b[0]*s,g=b[1]*s,bl=b[2]*s;
+ if(t===T.AIR&&ACT===2&&Math.abs(Math.sin(wx/27+Math.sin(wy/21)*.7))<.055){r=64*s;g=80*s;bl=48*s}
  if(t===T.AIR&&L.shroom&&ih(wx>>1,wy>>1,125)>.95){r=120*s;g=94*s;bl=110*s}
  if(t===T.CHEST){if(px>=2&&px<=13&&py>=4&&py<=13){let m=.85+(ih(wx>>2,wy,3)-.5)*.1,cc=[112,78,42];if(py<=5)m=1.1;if(py===8||px===2||px===13||py===13)cc=[62,58,54];if((py===8||py===9)&&(px===7||px===8))cc=[190,156,72];if(py===4||py===13)m*=.7;r=cc[0]*m;g=cc[1]*m;bl=cc[2]*m}else if(py===14&&px>=2&&px<=13){r*=.5;g*=.5;bl*=.5}}
  if(dc){const d=decorPx(dc,k,wx,wy,px,py);if(d){r=d[0];g=d[1];bl=d[2]}}
@@ -189,9 +191,11 @@ const CRACK=[];
 
 // ---------- item icons (8x8 world sprites) ----------
 const ICON={},ICONURL={};
-(function(){for(const id in ITEMS){const c=document.createElement('canvas');c.width=c.height=8;const g=c.getContext('2d'),col=ITEMS[id].c,rr=mulberry(id.length*31+id.charCodeAt(0));
+(function(){for(const id in ITEMS){const c=document.createElement('canvas');c.width=c.height=(ITEMS[id].refined||ROOT_ITEMS.some(r=>r[0]===id))?16:8;const g=c.getContext('2d'),col=ITEMS[id].c,rr=mulberry(id.length*31+id.charCodeAt(0));
  const Q=(x,y,m)=>{g.fillStyle=css([clamp(col[0]*m,0,255),clamp(col[1]*m,0,255),clamp(col[2]*m,0,255)]);g.fillRect(x,y,1,1)};
- if(id==='oil'){g.fillStyle='#5a4a3a';g.fillRect(3,0,2,2);for(let y=2;y<8;y++)for(let x=1;x<7;x++)Q(x,y,x<3?1.3:x>5?.7:1);g.fillStyle='#3a2a1a';g.fillRect(1,7,6,1)}
+ if(ITEMS[id].refined){for(let y=5;y<13;y++)for(let x=2;x<14;x++)if(x>3||y>7)Q(x,y,y<8?1.45:x<5?1.1:.7);for(let x=5;x<13;x++)Q(x,5,1.8)}
+ else if(ROOT_ITEMS.some(r=>r[0]===id)){for(let y=1;y<15;y++)for(let x=1;x<15;x++){const dx=x-7.5,dy=y-7.5;let inside=id==='memory'?Math.abs(dx)+Math.abs(dy)<7:id==='heartwood'?Math.abs(dx)<4&&Math.abs(dy)<7:id==='pollen'?Math.hypot(dx+3,dy+2)<3||Math.hypot(dx-3,dy-2)<3:id==='seed'?Math.hypot(dx,dy)<5+Math.cos(Math.atan2(dy,dx)*5)*2:id==='rootsteel'?Math.max(Math.abs(dx),Math.abs(dy))<6&&!(Math.abs(dx)<2&&Math.abs(dy)<2):Math.hypot(dx,dy)<6;if(inside)Q(x,y,dx+dy<-3?1.5:dx+dy>4?.6:1);if(inside&&id==='heartwood'&&x%3===0)Q(x,y,.65);if(inside&&id==='memory'&&(x===y||x===7))Q(x,y,1.8)}}
+ else if(id==='oil'){g.fillStyle='#5a4a3a';g.fillRect(3,0,2,2);for(let y=2;y<8;y++)for(let x=1;x<7;x++)Q(x,y,x<3?1.3:x>5?.7:1);g.fillStyle='#3a2a1a';g.fillRect(1,7,6,1)}
  else if(id==='dyn'){for(let y=2;y<8;y++)for(let x=2;x<6;x++)Q(x,y,x===2?1.3:x===5?.7:1);g.fillStyle='#cfc2a0';g.fillRect(4,0,1,2);g.fillStyle='#2a1a10';g.fillRect(2,4,4,1)}
  else if(id==='flare'){for(let i=0;i<6;i++){Q(1+i,6-i,1);Q(2+i,6-i,.7)}g.fillStyle='#ffd890';g.fillRect(6,0,2,2)}
  else if(id==='bolts'){for(const o of[0,3]){for(let i=0;i<6;i++)Q(1+o+i*.5|0,7-i,1.1)}g.fillStyle='#ddd';g.fillRect(3,1,1,1);g.fillRect(6,1,1,1)}

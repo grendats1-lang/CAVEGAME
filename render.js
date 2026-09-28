@@ -7,7 +7,7 @@ let LX0=0,LY0=0;
 function addLight(x,y,rad,r,g,b){if(rad<=0)return;const cx0=Math.floor(x/TS),cy0=Math.floor(y/TS),R=Math.ceil(rad);for(let ty=cy0-R;ty<=cy0+R;ty++){const j=ty-LY0;if(j<0||j>=LHh)continue;for(let tx=cx0-R;tx<=cx0+R;tx++){const i=tx-LX0;if(i<0||i>=LW)continue;const d=Math.hypot((tx+.5)*TS-x,(ty+.5)*TS-y)/TS;if(d>=rad)continue;if(!los(cx0,cy0,tx,ty))continue;let f=1-(d/rad)*(d/rad);f=f*Math.sqrt(f);const q=j*LW+i;lr[q]+=r*f;lg[q]+=g*f;lb[q]+=b*f}}}
 function lightAt(x,y){const i=Math.floor(x/TS)-LX0,j=Math.floor(y/TS)-LY0;if(i<0||j<0||i>=LW||j>=LHh)return 0;const q=j*LW+i;return(lr[q]+lg[q]+lb[q])/3}
 function computeLight(camx,camy){LX0=Math.floor(camx/TS)-1;LY0=Math.floor(camy/TS)-1;const run=state==='run'&&P,k=run?curLayer:layerOf(Math.floor(cam.y/TS)),a=LAYERS[k].amb;
- for(let j=0;j<LHh;j++)for(let i=0;i<LW;i++){const X=LX0+i,Y=LY0+j,q=j*LW+i,e=inB(X,Y)&&expl[I(X,Y)]?2.2:1;lr[q]=a[0]*e;lg[q]=a[1]*e;lb[q]=a[2]*e}
+ for(let j=0;j<LHh;j++)for(let i=0;i<LW;i++){const X=LX0+i,Y=LY0+j,q=j*LW+i,e=inB(X,Y)&&expl[I(X,Y)]?2.2:1;lr[q]=a[0]*e+S.set.contrast*.10;lg[q]=a[1]*e+S.set.contrast*.10;lb[q]=a[2]*e+S.set.contrast*.10}
  if(run){const fl=1+Math.sin(TT*13)*.015+(Math.random()-.5)*.035;let rad,I0;if(P.oil>0){rad=lampR()*fl;I0=1.05;if(P.oil<P.moil*.15){if(Math.random()<.06)I0*=.55;rad*=.85+.15*(P.oil/(P.moil*.15))}}else{rad=2+Math.sin(TT*3)*.2;I0=.45}
   if(RUN.dark>0){rad*=.45;I0*=.7}if(P.dead)I0*=Math.max(0,1-RUN.deathT/1.5);const cw=ACT?[.92,.86,.8]:[1,.8,.55];addLight(P.x,P.y-4,rad,I0*cw[0],I0*cw[1],I0*cw[2]);addLight(P.x,P.y,1.6,.22,.18,.13)}
  else addLight(cam.x,cam.y,6.5,.9,.72,.5);
@@ -15,6 +15,7 @@ function computeLight(camx,camy){LX0=Math.floor(camx/TS)-1;LY0=Math.floor(camy/T
  for(let j=0;j<LHh;j++)for(let i=0;i<LW;i++){const X=LX0+i,Y=LY0+j,t=tAt(X,Y),px=(X+.5)*TS,py=(Y+.5)*TS;
   if(t===T.AMETHYST)addLight(px,py,2.6,.3,.2,.4);else if(t===T.DIAMOND)addLight(px,py,1.8,.22,.28,.32);else if(t===T.STARMETAL)addLight(px,py,2.2,.22,.28,.4);else if(t===T.FROSTITE)addLight(px,py,2.2,.18,.3,.36);else if(t===T.VOIDSTONE)addLight(px,py,2.4,.3,.16,.42);else if(t===T.MYTHRIL)addLight(px,py,1.8,.16,.3,.26);
   else if(t===T.LAVA&&((X+Y)&1))addLight(px,py,3.2,.55+Math.sin(TT*2+X)*.05,.22,.06);else if(t===T.LIFT&&run&&RUN.act.has(layerOf(Y))&&!((X+Y)&1))addLight(px,py,3.5,.45,.36,.2)}
+ if(run&&boss&&!boss.dead&&boss.st!=='sleep'&&Math.hypot(boss.x-P.x,boss.y-P.y)<TS*22)addLight(boss.x,boss.y,6,ACT===2?.65:.42,ACT===2?.5:.32,ACT===1?.65:.25);
  for(const d of dlights){const f=d.life/d.max;addLight(d.x,d.y,d.r*f,d.c[0]*f*1.5,d.c[1]*f*1.5,d.c[2]*f*1.5)}
  for(const d of dyns)addLight(d.x,d.y,2.5,.6,.35,.15);
  for(const f of flares){const fl=1+(Math.random()-.5)*.15;addLight(f.x,f.y,5.5*fl*Math.min(1,f.life/3),.95*fl,.5,.3)}
@@ -39,19 +40,19 @@ function drawPlayer(camx,camy){const x=Math.round(P.x-camx),y=Math.round(P.y-cam
  cx.globalAlpha=1}
 function render(){
  cx.imageSmoothingEnabled=false;cx.globalCompositeOperation='source-over';cx.globalAlpha=1;cx.fillStyle='#000';cx.fillRect(0,0,VW,VH);if(!tiles)return;
- const run=state==='run'&&P,sa=shakeT*shakeT*7*S.set.shake,camx=Math.round(cam.x-VW/2+(Math.random()-.5)*2*sa),camy=Math.round(cam.y-VH/2+(Math.random()-.5)*2*sa);camX0=camx;camY0=camy;
+ const run=state==='run'&&P,sa=shakeT*shakeT*7*S.set.shake*(S.set.reduced?0:1),camx=Math.round(cam.x-VW/2+(Math.random()-.5)*2*sa),camy=Math.round(cam.y-VH/2+(Math.random()-.5)*2*sa);camX0=camx;camY0=camy;
  const cs=CH*TS;for(let cy=Math.floor(camy/cs);cy<=Math.floor((camy+VH)/cs);cy++)for(let cxx=Math.floor(camx/cs);cxx<=Math.floor((camx+VW)/cs);cxx++){if(cxx<0||cy<0||cxx*CH>=MW||cy*CH>=MH)continue;cx.drawImage(getChunk(cxx,cy),cxx*cs-camx,cy*cs-camy)}
  const tx0=Math.floor(camx/TS),ty0=Math.floor(camy/TS),tx1=tx0+Math.ceil(VW/TS),ty1=ty0+Math.ceil(VH/TS);
  for(let Y=ty0;Y<=ty1;Y++)for(let X=tx0;X<=tx1;X++){if(!inB(X,Y))continue;const i=I(X,Y),t=tiles[i],sx=X*TS-camx,sy=Y*TS-camy;
-  if(t===T.WATER||t===T.ICEFLOOR){const h=ih(X,Y,5),o=(TT*(t===T.WATER?6:1.5)+h*16)%16;cx.fillStyle=t===T.WATER?'rgba(160,180,190,.12)':'rgba(230,240,245,.1)';cx.fillRect(sx+Math.floor(o),sy+2+Math.floor(h*11),3,1);cx.fillRect(sx+Math.floor((o+8)%14),sy+1+Math.floor(h*97)%14,2,1)}
+  if(t===T.WATER||t===T.SAP||t===T.ICEFLOOR){const h=ih(X,Y,5),o=(TT*(t===T.WATER?6:1.5)+h*16)%16;cx.fillStyle=t===T.WATER?'rgba(160,180,190,.12)':'rgba(230,240,245,.1)';cx.fillRect(sx+Math.floor(o),sy+2+Math.floor(h*11),3,1);cx.fillRect(sx+Math.floor((o+8)%14),sy+1+Math.floor(h*97)%14,2,1)}
   else if(t===T.LAVA){cx.fillStyle='rgba(255,140,50,'+(.08+.06*Math.sin(TT*2+X*.7+Y)).toFixed(3)+')';cx.fillRect(sx,sy,TS,TS);if(Math.random()<.004)part({x:(X+.5)*TS+rnd(-5,5),y:(Y+.5)*TS,vy:-12,life:.8,col:[255,150,60],type:'spark'})}
   if(dmg[i]>0&&TI[t].solid){const w=wob.get(i)||0,ox=w>0?ri(-1,1):0,oy=w>0?ri(-1,1):0;if(w>0){const ch=chunks[((Y/CH)|0)*16+((X/CH)|0)];if(ch)cx.drawImage(ch,(X%CH)*TS,(Y%CH)*TS,TS,TS,sx+ox,sy+oy,TS,TS)}cx.drawImage(CRACK[Math.min(3,Math.floor(dmg[i]/tileHP(X,Y)*4))],sx+ox,sy+oy)}}
  for(const r of rocks){const p=r.t/r.T,x=r.x-camx,y=r.y-camy,s=2+p*5;cx.fillStyle='rgba(0,0,0,'+(.2+p*.4).toFixed(2)+')';cx.fillRect(Math.round(x-s),Math.round(y-s/3),Math.round(s*2),Math.max(1,Math.round(s*.66)));if(p>.55){const h=(1-(p-.55)/.45)*70;px(Math.round(x-2),Math.round(y-3-h),5,4,'#6a625a');px(Math.round(x-2),Math.round(y-3-h),3,1,'#8a8278')}}
- for(const o of items){const x=Math.round(o.x-camx-4),y=Math.round(o.y-camy-4-o.z-(o.vx||o.vy||o.z?0:Math.sin(TT*3+o.x)));if(x<-10||y<-10||x>VW||y>VH)continue;px(x+1,Math.round(o.y-camy+3),6,2,'rgba(0,0,0,.3)');cx.drawImage(ICON[o.id],x,y)}
+ for(const o of items){const x=Math.round(o.x-camx-ICON[o.id].width/2),y=Math.round(o.y-camy-ICON[o.id].height/2-o.z-(o.vx||o.vy||o.z?0:Math.sin(TT*3+o.x)));if(x<-10||y<-10||x>VW||y>VH)continue;px(x+1,Math.round(o.y-camy+3),6,2,'rgba(0,0,0,.3)');cx.drawImage(ICON[o.id],x,y)}
  if(run)for(const e of enemies)drawEnemy(e,camx,camy);
  for(const d of dyns){const x=Math.round(d.x-camx),y=Math.round(d.y-camy-d.z);px(x-2,Math.round(d.y-camy)+1,4,2,'rgba(0,0,0,.3)');px(x-2,y-1,4,2,'#a8402c');px(x-2,y-1,4,1,'#c85a40')}
  for(const f of flares){const x=Math.round(f.x-camx),y=Math.round(f.y-camy-f.z);px(x-2,y,4,1,'#8a3a24');px(x+1,y-1,1,1,'#ffd890')}
- if(run)drawPlayer(camx,camy);
+ if(run){drawPlayer(camx,camy);drawPOIs(camx,camy);if(S.exp.ench.pick||S.exp.ench.sword){px(Math.round(P.x-camx)-2,Math.round(P.y-camy)-8,1,3,ench('sword','frostbrand')?'#9ae6fa':ench('pick','prospector')?'#f8d56e':'#a6e0ce')}}
  drawParts(camx,camy,false);
  computeLight(camx,camy);
  cx.imageSmoothingEnabled=true;cx.globalCompositeOperation='multiply';cx.drawImage(lcv,LX0*TS-camx,LY0*TS-camy,LW*TS,LHh*TS);cx.globalCompositeOperation='source-over';cx.imageSmoothingEnabled=false;

@@ -1,6 +1,6 @@
 'use strict';
 // DEEP BELOW v2 - core: constants, data, save, procedural audio and music
-const VW=480,VH=270,TS=16,MW=72,LH=64,CH=16;
+const VW=640,VH=360,TS=16,MW=72,LH=64,CH=16;
 let NL=5,MH=LH*5;
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t,rnd=(a,b)=>a+Math.random()*(b-a),ri=(a,b)=>Math.floor(a+Math.random()*(b-a+1));
@@ -98,7 +98,7 @@ const SUP=[
 
 // ---------- upgrades (harder economy) ----------
 const SWING=[.42,.37,.33,.29,.26,.23],PACK=[10,14,19,26,34,44],SCANR=[0,11,17,26],SCANCD=[0,24,18,12],SALV=[0,2,4,7];
-const SPEED=l=>62+9*l,LAMP=l=>5.5+1.1*l,OILM=l=>110+28*l;
+const SPEED=l=>62+9*l,LAMP=l=>5.5+1.1*l,OILM=l=>360+45*l;
 const UPG=[
 {id:'swing',n:'Grip',d:'Swing, slash and reload faster.',max:5,b:120,g:2.6,v:l=>(1/SWING[l]).toFixed(1)+'/s'},
 {id:'boots',n:'Boots',d:'Move faster.',max:4,b:100,g:2.7,v:l=>SPEED(l)+' spd'},
@@ -157,18 +157,56 @@ const ACH=[
 
 // ---------- save ----------
 const SKEY='deepbelow_save_v1';
-function defSave(){return{v:2,money:0,up:{},gear:{pick:0,sword:-1,bow:-1,armor:-1},mats:{},cons:{dyn:2,flare:1,bolts:0,tonic:1,rope:0},unl:[1,0],act:0,startL:0,reached:[0,-1],boss:{},q:0,qb:0,
- stats:{runs:0,escapes:0,deaths:0,earned:0,sold:0,mined:0,ores:0,deepest:0,kills:0,best:0,time:0,dyn:0,rares:0,crafted:0,craftw:0,kt:{}},ach:{},set:{master:.8,music:.55,sfx:.85,shake:1,parts:1},tut:false,seen:{},mods:[],ng:0,wins:0,won:false}}
+function defSave(){return{v:3,money:0,up:{},gear:{pick:0,sword:-1,bow:-1,armor:-1},mats:{},cons:{dyn:2,flare:1,bolts:0,tonic:1,rope:0,bridge:0,decoy:0,heat:0,recorder:0,sapcharge:0},unl:[1,0,0],act:0,startL:0,reached:[0,-1,-1],boss:{},q:0,qb:0,
+ stats:{runs:0,escapes:0,deaths:0,earned:0,sold:0,mined:0,ores:0,deepest:0,kills:0,best:0,time:0,dyn:0,rares:0,crafted:0,craftw:0,kt:{}},ach:{},set:{master:.8,music:.55,sfx:.85,shake:1,parts:1,contrast:0,reduced:0},tut:false,seen:{},mods:[],ng:0,wins:0,won:false,exp:{flags:{},journal:[],trust:{},projects:{},visited:{},relics:{},protected:{},ench:{},contracts:0,failed:0,rescues:0,ending:[],mastery:{},actEscapes:[0,0,0],condition:'calm',contract:'relay',loadout:'surveyor',variant:'',seedText:'',corruption:0,telemetry:[]},checkpoint:null,lastResult:null}}
 let S=defSave();
-function applySaveData(d){const b=defSave();
- S=Object.assign(b,d);S.stats=Object.assign(defSave().stats,d.stats||{});S.stats.kt=S.stats.kt||{};S.set=Object.assign(defSave().set,d.set||{});S.cons=Object.assign(defSave().cons,d.cons||{});
- S.gear=Object.assign(defSave().gear,d.gear||{});S.up=d.up||{};S.ach=d.ach||{};S.seen=d.seen||{};S.boss=d.boss||{};S.mats=d.mats||{};S.mods=d.mods||[];
- if(!d.v){S.gear.pick=Math.min(5,(d.up&&d.up.pick)||0);delete S.up.pick;S.unl=[d.unlocked||1,0];S.reached=[Math.max(0,(d.unlocked||1)-1),-1];S.v=2}
- if(!Array.isArray(S.unl))S.unl=[1,0];if(!Array.isArray(S.reached))S.reached=[0,-1]}
-function load(){try{const d=JSON.parse(localStorage.getItem(SKEY)||'null');if(!d)return;applySaveData(d)}catch(e){S=defSave()}}
-function save(){try{localStorage.setItem(SKEY,JSON.stringify(S))}catch(e){}}
+// The original key is retained so v1/v2 characters are migrated in place.
+let storageWarning='';
+const plain=o=>!!o&&typeof o==='object'&&!Array.isArray(o);
+const safeNum=(v,d=0,max=1e12)=>Number.isFinite(v)?clamp(v,0,max):d;
+function applySaveData(d){
+ if(!plain(d))throw new Error('Save must be an object');
+ const base=defSave(),legacy=!d.v; S=base;
+ for(const key of ['money','q','qb','ng','wins','act','startL'])S[key]=Math.floor(safeNum(d[key],base[key]));
+ for(const key of ['tut','won','seenWin'])S[key]=d[key]===true;
+ for(const key of ['stats','cons','up','set','gear'])if(plain(d[key]))for(const k of Object.keys(key==='up'?Object.fromEntries(UPG.map(u=>[u.id,0])):base[key])){
+  if(k==='kt')continue;const v=d[key][k];if(Number.isFinite(v))S[key][k]=v;
+ }
+ for(const k of Object.keys(S.stats))if(k!=='kt')S.stats[k]=safeNum(S.stats[k]);
+ S.stats.kt={};if(plain(d.stats?.kt))for(const [k,v] of Object.entries(d.stats.kt))if(/^[a-z]+$/.test(k))S.stats.kt[k]=Math.floor(safeNum(v));
+ for(const u of UPG)S.up[u.id]=Math.floor(safeNum(S.up[u.id],0,u.max));
+ for(const g in GEAR)S.gear[g]=clamp(Math.floor(Number.isFinite(S.gear[g])?S.gear[g]:base.gear[g]),g==='pick'?0:-1,GEAR[g].length-1);
+ if(legacy)S.gear.pick=Math.floor(safeNum(d.up?.pick,0,5));
+ for(const k in S.cons)S.cons[k]=Math.floor(safeNum(S.cons[k],0,100));
+ for(const k in S.set)S.set[k]=safeNum(S.set[k],base.set[k],k==='shake'?1.5:1);
+ S.mats={};if(plain(d.mats))for(const k of Object.keys(ITEMS))if(!ITEMS[k].use)S.mats[k]=Math.floor(safeNum(d.mats[k]));
+ for(const key of ['ach','seen','boss']){S[key]={};if(plain(d[key]))for(const [k,v] of Object.entries(d[key]))if(/^[a-zA-Z0-9_]+$/.test(k)&&v)S[key][k]=1;}
+ S.mods=Array.isArray(d.mods)?[...new Set(d.mods.filter(id=>MODS.some(m=>m.id===id)))]:[];
+ S.unl=ACTS.map((a,i)=>Math.floor(safeNum(Array.isArray(d.unl)?d.unl[i]:i===0?(d.unlocked||1):0,i===0?1:0,a.layers.length)));S.unl[0]=Math.max(1,S.unl[0]);
+ S.reached=ACTS.map((a,i)=>clamp(Math.floor(Number.isFinite(d.reached?.[i])?d.reached[i]:i===0?0:-1),-1,a.layers.length-1));
+ S.act=clamp(S.act,0,ACTS.length-1);if(!S.unl[S.act])S.act=0;S.startL=clamp(S.startL,0,S.unl[S.act]-1);S.q=clamp(S.q,0,QUESTS.length);
+ const e=plain(d.exp)?d.exp:{};
+ for(const key of ['flags','projects','visited','relics','protected','mastery'])if(plain(e[key]))for(const [k,v] of Object.entries(e[key]))if(/^[a-zA-Z0-9_]+$/.test(k)&&v)S.exp[key][k]=1;
+ for(const key of ['trust','ench'])if(plain(e[key]))for(const [k,v] of Object.entries(e[key]))if(/^[a-z]+$/.test(k)){
+  if(key==='trust')S.exp[key][k]=Math.floor(safeNum(v,0,20));else if(ENCHANTS[k]?.some(x=>x.id===v))S.exp.ench[k]=v;
+ }
+ for(const key of ['contracts','failed','rescues','corruption'])S.exp[key]=Math.floor(safeNum(e[key],0,100000));
+ S.exp.journal=Array.isArray(e.journal)?[...new Set(e.journal.filter(k=>typeof k==='string'&&/^[a-zA-Z0-9_]+$/.test(k)))].slice(0,300):[];
+ S.exp.ending=Array.isArray(e.ending)?[...new Set(e.ending.filter(k=>['sever','accord','seal'].includes(k)))]:[];
+ S.exp.actEscapes=ACTS.map((_,i)=>Math.floor(safeNum(e.actEscapes?.[i])));
+ S.exp.telemetry=Array.isArray(e.telemetry)?e.telemetry.slice(-30).filter(plain).map(r=>Object.fromEntries(Object.entries(r).filter(([k,v])=>/^[a-z]+$/i.test(k)&&(typeof v==='boolean'||Number.isFinite(v))))):[];
+ S.exp.condition=CONDITIONS.some(c=>c.id===e.condition)?e.condition:'calm';S.exp.contract=CONTRACTS.some(c=>c.id===e.contract)?e.contract:'relay';
+ S.exp.loadout=['surveyor','warden','porter'].includes(e.loadout)?e.loadout:'surveyor';S.exp.variant=VARIANTS.some(v=>v.id===e.variant)?e.variant:'';
+ S.exp.seedText=typeof e.seedText==='string'?e.seedText.replace(/[^a-zA-Z0-9-]/g,'').slice(0,32):'';
+ S.checkpoint=validCheckpoint(d.checkpoint)?d.checkpoint:null;
+ // A result is only a receipt. Reopening it cannot issue rewards.
+ const r=d.lastResult;if(plain(r)&&typeof r.ok==='boolean'&&ACTS[r.a]?.layers[r.deep]&&Array.isArray(r.kept)&&r.kept.length<=100&&r.kept.every(id=>ITEMS[id]&&!ITEMS[id].use)&&['base','bonus','lost','time','maxD'].every(k=>Number.isFinite(r[k])&&r[k]>=0))S.lastResult={ok:r.ok,a:r.a,deep:r.deep,kept:r.kept,base:r.base,bonus:r.bonus,lost:r.lost,time:r.time,maxD:r.maxD,won:!!r.won};S.v=3;
+}
+function load(){try{const raw=localStorage.getItem(SKEY);if(raw)applySaveData(JSON.parse(raw))}catch(e){storageWarning='Your save could not be read. The original has not been overwritten. Import a backup or explicitly reset to begin again.';console.warn('DEEP BELOW save load:',e.message);S=defSave();storageLocked=true}}
+let storageLocked=false;
+function save(){if(storageLocked)return false;try{if(typeof captureCheckpoint==='function')captureCheckpoint();localStorage.setItem(SKEY,JSON.stringify(S));return true}catch(e){const firstWarning=!storageWarning;if(firstWarning)console.warn('DEEP BELOW storage:',e.message);storageWarning='Browser storage is unavailable or full. Export your character from the menu before closing.';if(firstWarning&&typeof toast==='function')queueMicrotask(()=>toast(storageWarning));return false}}
 function downloadSave(){save();const blob=new Blob([JSON.stringify({format:'deep-below-character',version:1,save:S},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='deep-below-character.json';a.click();URL.revokeObjectURL(url)}
-function importSaveFile(file,done){if(!file){done(new Error('No file selected'));return}const reader=new FileReader();reader.onload=()=>{try{const packet=JSON.parse(reader.result),d=packet&&packet.format==='deep-below-character'?packet.save:packet;if(!d||typeof d!=='object'||!d.gear||!d.stats||!d.set)throw new Error('This is not a valid DEEP BELOW character file');applySaveData(d);save();done(null)}catch(e){done(e)}};reader.onerror=()=>done(new Error('Could not read that file'));reader.readAsText(file)}
+function importSaveFile(file,done){if(!file){done(new Error('No file selected'));return}const reader=new FileReader();reader.onload=()=>{try{const packet=JSON.parse(reader.result),d=packet&&packet.format==='deep-below-character'?packet.save:packet;if(!d||typeof d!=='object'||!d.gear||!d.stats||!d.set)throw new Error('This is not a valid DEEP BELOW character file');applySaveData(d);storageLocked=false;storageWarning='';save();done(null)}catch(e){done(e)}};reader.onerror=()=>done(new Error('Could not read that file'));reader.readAsText(file)}
 const lv=id=>S.up[id]||0;
 const cost=u=>Math.round(u.b*Math.pow(u.g,lv(u.id))/5)*5;
 
@@ -179,7 +217,7 @@ let cam={x:MW*TS/2,y:20*TS},camX0=0,camY0=0,shakeT=0,hitstop=0,flashT=0,TT=0,cur
 const wob=new Map(),M={x:VW/2,y:VH/2,l:false,r:false,lp:false},K={};
 
 // ---------- audio engine ----------
-const AU={ctx:null,
+const AU={ctx:null,voices:0,
 init(){if(this.ctx){if(this.ctx.state==='suspended')this.ctx.resume();return}const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const a=this.ctx=new C();
  this.comp=a.createDynamicsCompressor();this.comp.threshold.value=-14;this.comp.connect(a.destination);
  this.master=a.createGain();this.master.connect(this.comp);this.sfx=a.createGain();this.sfx.connect(this.master);this.mus=a.createGain();this.mus.connect(this.master);
@@ -192,11 +230,11 @@ init(){if(this.ctx){if(this.ctx.state==='suspended')this.ctx.resume();return}con
  this.vol();MUS.set(MUS.mode,MUS.layer,MUS.act,true)},
 ir(len){const a=this.ctx,r=a.sampleRate,b=a.createBuffer(2,Math.floor(r*len),r);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<d.length;i++){const t=i/r;let v=(Math.random()*2-1)*Math.pow(1-t/len,4)*.5;for(const e of[.11,.23,.41,.62])if(Math.abs(t-e-c*.019)<.006)v+=(Math.random()*2-1)*.5*(1-e);d[i]=v}}return b},
 vol(){if(!this.ctx)return;this.master.gain.value=S.set.master;this.sfx.gain.value=S.set.sfx;this.mus.gain.value=S.set.music},
-route(g,pan,rev,bus){const a=this.ctx;let n=g;if(pan&&a.createStereoPanner){const p=a.createStereoPanner();p.pan.value=clamp(pan,-1,1);n.connect(p);n=p}n.connect(bus==='mus'?this.mus:this.sfx);if(rev>0){const r=a.createGain();r.gain.value=rev*(bus==='mus'?S.set.music:S.set.sfx)*.6;n.connect(r);r.connect(this.rev)}},
-tone(f,dur,o={}){if(!this.ctx)return;const a=this.ctx,t=a.currentTime+(o.dl||0),os=a.createOscillator(),g=a.createGain(),v=o.v||.2,at=o.at||.004,e=Math.max(dur,at+.02);os.type=o.type||'sine';os.frequency.setValueAtTime(f,t);if(o.f2)os.frequency.exponentialRampToValueAtTime(o.f2,t+dur);
- g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+at);g.gain.exponentialRampToValueAtTime(.0001,t+e);if(o.lp){const fl=a.createBiquadFilter();fl.type='lowpass';fl.frequency.value=o.lp;os.connect(fl);fl.connect(g)}else os.connect(g);this.route(g,o.pan,o.rev==null?.25:o.rev,o.bus);os.start(t);os.stop(t+e+.1)},
-nz(dur,o={}){if(!this.ctx)return;const a=this.ctx,t=a.currentTime+(o.dl||0),s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain(),v=o.v||.2,at=o.at||.003,e=Math.max(dur,at+.02);s.buffer=this.nb;f.type=o.ft||'bandpass';f.frequency.setValueAtTime(o.f||1000,t);if(o.f2)f.frequency.exponentialRampToValueAtTime(o.f2,t+dur);f.Q.value=o.q||1;
- g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+at);g.gain.exponentialRampToValueAtTime(.0001,t+e);s.connect(f);f.connect(g);this.route(g,o.pan,o.rev==null?.2:o.rev,o.bus);s.start(t,Math.random()*Math.max(0,3.8-e));s.stop(t+e+.1)}};
+route(g,pan,rev,bus){const a=this.ctx,nodes=[g];let n=g;if(pan&&a.createStereoPanner){const p=a.createStereoPanner();nodes.push(p);p.pan.value=clamp(pan,-1,1);n.connect(p);n=p}n.connect(bus==='mus'?this.mus:this.sfx);if(rev>0){const r=a.createGain();nodes.push(r);r.gain.value=rev*(bus==='mus'?S.set.music:S.set.sfx)*.6;n.connect(r);r.connect(this.rev)}return()=>nodes.forEach(n=>n.disconnect())},
+tone(f,dur,o={}){if(!this.ctx||this.voices>=64)return;this.voices++;const a=this.ctx,t=a.currentTime+(o.dl||0),os=a.createOscillator(),g=a.createGain(),v=o.v||.2,at=o.at||.004,e=Math.max(dur,at+.02);os.type=o.type||'sine';os.frequency.setValueAtTime(f,t);if(o.f2)os.frequency.exponentialRampToValueAtTime(o.f2,t+dur);
+ g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+at);g.gain.exponentialRampToValueAtTime(.0001,t+e);if(o.lp){const fl=a.createBiquadFilter();fl.type='lowpass';fl.frequency.value=o.lp;os.connect(fl);fl.connect(g)}else os.connect(g);const cleanup=this.route(g,o.pan,o.rev==null?.25:o.rev,o.bus);os.onended=()=>{this.voices--;os.disconnect();cleanup()};os.start(t);os.stop(t+e+.1)},
+nz(dur,o={}){if(!this.ctx||this.voices>=64)return;this.voices++;const a=this.ctx,t=a.currentTime+(o.dl||0),s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain(),v=o.v||.2,at=o.at||.003,e=Math.max(dur,at+.02);s.buffer=this.nb;f.type=o.ft||'bandpass';f.frequency.setValueAtTime(o.f||1000,t);if(o.f2)f.frequency.exponentialRampToValueAtTime(o.f2,t+dur);f.Q.value=o.q||1;
+ g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+at);g.gain.exponentialRampToValueAtTime(.0001,t+e);s.connect(f);f.connect(g);const cleanup=this.route(g,o.pan,o.rev==null?.2:o.rev,o.bus);s.onended=()=>{this.voices--;s.disconnect();f.disconnect();cleanup()};s.start(t,Math.random()*Math.max(0,3.8-e));s.stop(t+e+.1)}};
 
 function panOf(x){return P&&state==='run'?clamp((x-P.x)/220,-1,1):0}
 const SND={
@@ -277,7 +315,7 @@ tick(s){const m=this.mode,b=s%16,bar=Math.floor(s/16);
  else if(m==='camp'){const ch=[[53,57,60,65],[48,52,55,60],[50,53,57,62],[46,50,53,58]][bar%4];if(b%2===0)this.pl(ch[(b/2)%4]+12,.9,.042);if(b===0||b===8)this.bass(ch[0]-12,.45,.05);if(b%4===2)this.hat(.025);if(b===4||b===12)AU.nz(.08,{f:3000,q:.5,v:.035,bus:'mus',rev:.1});
   if(b===0&&bar%2===1){const mel=[72,74,77,79,81,84];for(let k=0;k<4;k++)AU.tone(NOTE(mel[ri(0,5)]),.5,{type:'sine',v:.03,dl:k*.33,bus:'mus',rev:.6})}}
  else if(m==='boss'){const r=(this.act?49:50)+[0,0,-2,-4][bar%4];if(b%4===0||b===14)this.kick(.32);if(b===4||b===12)this.snare(.2);if(b%2===1)this.hat(.035);const bl=[0,0,12,0,3,0,7,5];if(b%2===0){this.bass(r-12+bl[(b/2)%8],.2,.07);this.pl(r+12+[0,3,7,12,15,12,7,3][(b/2)%8],.22,.028,'square')}if(b===0&&bar%4===0)this.pad(r,4,.03)}
- else{const L=this.layer,A=this.act,root=(A?45:50)-L*2,sc=A?[0,1,4,5,7,8,10]:L<3?[0,3,5,7,10]:[0,1,3,6,7,10];
+ else{const L=this.layer,A=this.act,root=(A===2?48:A?45:50)-L*2,sc=A===2?[0,2,5,7,9]:A?[0,1,4,5,7,8,10]:L<3?[0,3,5,7,10]:[0,1,3,6,7,10];
   if(s%32===0){this.pad(root-12,8,.03+L*.003);this.pad(root-12+sc[ri(1,sc.length-1)],8,.018)}
   if(L>=1&&(b===0||b===3))this.kick(.045+L*.012+this.int*.12);
   if(this.int>.3){if(b%2===0)this.bass(root-12+(b===8?sc[2]:0),.18,.045*this.int);if(b%4===2)this.hat(.02+this.int*.02);if(b===12&&this.int>.6)this.snare(.08)}

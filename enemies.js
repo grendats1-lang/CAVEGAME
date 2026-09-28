@@ -3,13 +3,13 @@
 const EB={crawler:{hp:8,dmg:15,spd:44,hw:5},bat:{hp:5,dmg:11,spd:66,hw:3,fly:1},spitter:{hp:10,dmg:17,spd:35,hw:5},burrower:{hp:17,dmg:24,spd:48,hw:6},stalker:{hp:20,dmg:26,spd:31,hw:5},golem:{hp:75,dmg:36,spd:19,hw:7,armor:1},wraith:{hp:18,dmg:20,spd:46,hw:4,fly:1},sporeling:{hp:7,dmg:42,spd:55,hw:4},
  brood:{hp:1100,dmg:30,spd:50,hw:10,boss:1},king:{hp:4000,dmg:40,spd:44,hw:12,boss:1,fly:1}};
 const ENAME={brood:'THE BROOD MOTHER',king:'THE HOLLOW KING'};
-function mkEnemy(type,x,y,k){const b=EB[type],g=gdepth(k),rv=mod('rav')?1.6:1,m=b.boss?rv:(1+g*.6)*rv,dm=b.boss?rv:(1+g*.35)*rv,hp=b.hp*m;
+function mkEnemy(type,x,y,k){const b=EB[type],g=gdepth(k),rv=mod('rav')?1.6:1,m=b.boss?rv:(1+Math.min(g,8)*.2)*rv,dm=b.boss?rv:(1+Math.min(g,8)*.12)*rv,hp=b.hp*m;
  return{type,x,y,vx:0,vy:0,hp,mhp:hp,dmg:b.dmg*dm,spd:b.spd*(1+(b.boss?0:g*.05)),hw:b.hw,fly:!!b.fly,armor:!!b.armor,boss:!!b.boss,
   st:type==='bat'?'roost':type==='burrower'?'under':type==='stalker'?'hunt':b.boss?'sleep':'idle',t:rnd(0,2),fl:0,k,dir:rnd(0,6.28),cd:rnd(.5,1.5),cd2:rnd(1,3),acd:0,an:rnd(0,9),al:0,os:Math.random()<.5?-1:1,slow:0,under:type==='burrower',alpha:1,ph:1,n:0}}
 function nearFlare(e){for(const f of flares)if(Math.hypot(f.x-e.x,f.y-e.y)<TS*5)return f;return null}
 function contactMul(e){switch(e.type){case 'crawler':return e.st==='charge'?1:e.st==='stalk'?.5:0;case 'bat':return e.st==='fly'||e.st==='swoop'?1:0;case 'spitter':return .4;case 'burrower':return e.st==='up'?.6:0;case 'stalker':return e.st==='hunt'||e.st==='lunge'?1:0;case 'golem':return .5;case 'wraith':return e.st==='drift'?.5:0;case 'sporeling':return 0;default:return e.st==='charge'?1:(e.st==='sleep'||e.st==='roar'||e.under)?0:.6}}
 function updEnemy(e,dt){
- const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)||1;if(d>TS*28&&!e.boss)return;
+ if(enemyEffects(e,dt)||specialEnemy(e,dt)||frozenEnemy(e,dt))return;const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)||1;if(d>TS*28&&!e.boss)return;
  e.fl-=dt;e.cd-=dt;e.cd2-=dt;e.acd-=dt;e.an+=dt;e.al-=dt;e.t-=dt;if(e.slow>0)e.slow-=dt;
  const tx=Math.floor(e.x/TS),ty=Math.floor(e.y/TS),vis=!P.dead&&d<TS*9&&los(tx,ty,Math.floor(P.x/TS),Math.floor(P.y/TS));if(vis)e.al=Math.max(e.al,2.5);const sees=vis||(!P.dead&&e.al>0);
  const sm=e.slow>0?.5:1;let ax=0,ay=0,sp=e.spd*sm,nocol=false;const mode=e.fly?2:1;
@@ -71,7 +71,7 @@ function updEnemy(e,dt){
  else{const hit=moveBox(e,e.vx*dt,e.vy*dt,e.hw,mode);if(hit&&e.st==='charge'){e.st=e.boss?'move':'rec';e.t=e.boss?1:.8;shake(e.boss?.4:.05);if(e.boss)SND.impact(e.x)}}
  const cm=contactMul(e);if(!P.dead&&cm>0&&!e.under&&d<e.hw+7&&e.acd<=0){e.acd=e.boss?.65:.75;hurtPlayer(e.dmg*cm,dx/d,dy/d);if(e.type==='bat'){e.st='fly';e.t=rnd(1.5,3)}}}
 function bossAI(e,dt,dx,dy,d,vis){
- if(e.st==='sleep'){if(!P.dead&&d<TS*10){e.st='roar';e.t=1.6;SND.roar();shake(.6);msg(ENAME[e.type],3);hintOnce('boss_'+e.type,e.type==='brood'?'<b>The Brood Mother!</b> Watch her wind-ups, dodge her acid, and thin out her brood.':'<b>The Hollow King.</b> Get off the marked ground and slip between his rings of void.')}return[0,0,0]}
+ if(e.st==='sleep'){if(!P.dead&&d<TS*10){beat(e.type==='brood'?'broodEntry':'kingReveal');e.st='roar';e.t=1.6;SND.roar();shake(.6);msg(ENAME[e.type],3);hintOnce('boss_'+e.type,e.type==='brood'?'<b>The Brood Mother!</b> Watch her wind-ups, dodge her acid, and thin out her brood.':'<b>The Hollow King.</b> Get off the marked ground and slip between his rings of void.')}return[0,0,0]}
  if(e.st==='roar'){if(e.t<=0){e.st='move';e.t=1.2}return[0,0,0,0]}
  if(e.hp<e.mhp*.5&&e.ph===1){e.ph=2;SND.roar();shake(.5);msg('ENRAGED',2);e.spd*=1.25}
  const p2=e.ph===2;let ax=0,ay=0,sp=e.spd,nc=0;
@@ -89,28 +89,28 @@ function bossAI(e,dt,dx,dy,d,vis){
  return[ax,ay,sp,nc]}
 function pickBossAttack(e,p2){const o=e.type==='brood'?['wind','volley','summon','wind'].concat(p2?['dive','volley','dive']:[]):['slam','orbs','summon','wind'].concat(p2?['dark','orbs','slam']:[]);const s=o[ri(0,o.length-1)];e.st=s;e.n=0;
  if(s==='wind')e.t=.7;else if(s==='volley')e.t=.6;else if(s==='summon'){e.t=.8;SND.roar()}else if(s==='dive'){e.t=2;SND.burrow(e.x)}else if(s==='slam')e.t=0;else if(s==='orbs')e.t=.7;else e.t=.1}
-function bossDefeated(e){SND.bossDie();shake(1);hitstop=.4;dlights.push({x:e.x,y:e.y,r:12,c:[1,.9,.7],life:2,max:2});for(let n=0;n<80;n++)part({x:e.x,y:e.y,vx:rnd(-160,160),vy:rnd(-160,160),life:rnd(.5,1.6),col:e.type==='king'?[200,170,255]:[255,200,120],type:'spark',keep:1});
+function bossDefeated(e){if(e.type==='sovereign'){sovereignDefeated();return}if(RUN.x)RUN.x.boss++;beat(e.type==='brood'?'brood':'king');SND.bossDie();shake(1);hitstop=.4;dlights.push({x:e.x,y:e.y,r:12,c:[1,.9,.7],life:2,max:2});for(let n=0;n<80;n++)part({x:e.x,y:e.y,vx:rnd(-160,160),vy:rnd(-160,160),life:rnd(.5,1.6),col:e.type==='king'?[200,170,255]:[255,200,120],type:'spark',keep:1});
  for(const q of enemies)if(!q.boss&&Math.hypot(q.x-e.x,q.y-e.y)<TS*16){q.dead=1;for(let n=0;n<6;n++)part({x:q.x,y:q.y,vx:rnd(-40,40),vy:rnd(-40,40),life:.8,col:[90,80,70],sz:3,type:'dust'})}
  const first=!S.boss[e.type];S.boss[e.type]=1;
  if(e.type==='brood'){drop('heart',e.x,e.y,1);for(let i=0;i<3;i++)drop('starmetal',e.x,e.y);ach('brood');if((S.unl[1]||0)<1)S.unl[1]=1;msg('THE BROOD MOTHER IS DEAD',4);showHint('The ice below cracks open. <b>The Frozen Deep</b> can now be reached from camp.',8)}
- else{drop('crown',e.x,e.y,1);for(let i=0;i<3;i++)drop('voidstone',e.x,e.y);ach('king');S.won=true;if(first)S.wins++;RUN.won=1;msg('THE HOLLOW KING FALLS',4);setTimeout(()=>{if(state==='run'&&P&&!P.dead)showVictory()},4000)}
+ else{S.unl[2]=Math.max(1,S.unl[2]||0);relic('crown');drop('crown',e.x,e.y,1);for(let i=0;i<3;i++)drop('voidstone',e.x,e.y);ach('king');S.won=true;if(first)S.wins++;RUN.won=1;msg('THE HOLLOW KING FALLS',4);RUN.victoryDelay=4}
  save();boss=null}
 function sporeBurst(e,armed){e.dead=1;SND.pop(e.x);for(let n=0;n<(armed?30:10);n++)part({x:e.x,y:e.y,vx:rnd(-60,60),vy:rnd(-60,60),life:rnd(.8,1.6),col:[130,100,120],sz:rnd(3,7),type:'gas'});if(armed){shake(.3);const d=Math.hypot(P.x-e.x,P.y-e.y)||1;if(!P.dead&&d<34)hurtPlayer(e.dmg,(P.x-e.x)/d,(P.y-e.y)/d);for(const q of enemies)if(q!==e&&!q.boss&&Math.hypot(q.x-e.x,q.y-e.y)<30)hurtEnemy(q,8,0,0)}}
 function hurtEnemy(e,dm,nx,ny,slow){if(e.dead||e.under)return;if(e.st==='sleep'){e.st='roar';e.t=1;SND.roar();msg(ENAME[e.type],3)}
- if(e.armor){const red=Math.max(dm*.55,dm-5);if(red<dm*.75)SND.armor(e.x);dm=red}
+ dm=improveHit(e,dm);if(e.armor){const red=Math.max(dm*.55,dm-5);if(red<dm*.75)SND.armor(e.x);dm=red}
  e.hp-=dm;e.fl=.12;const kb=e.boss?20:e.armor?50:170;e.vx+=nx*kb;e.vy+=ny*kb;e.al=6;if(slow)e.slow=2.5;
  if(!e.boss&&(e.st==='wind'||e.st==='charge'||e.st==='aim'||e.st==='lunge')){e.st=e.type==='spitter'?'kite':e.type==='stalker'?'hunt':'rec';e.t=.5}
  if(e.st==='idle')e.st=e.type==='spitter'?'kite':e.type==='golem'?'walk':e.type==='wraith'?'drift':e.type==='sporeling'?'rush':'stalk';if(e.st==='roost')e.st='fly';
  SND.ehit(e.x);for(let n=0;n<5;n++)part({x:e.x,y:e.y,vx:nx*60+rnd(-40,40),vy:ny*60+rnd(-40,40),z:4,vz:rnd(20,60),life:rnd(.4,.9),col:e.type==='golem'?[110,104,96]:e.type==='wraith'?[170,200,220]:[74,82,52]});
  text(e.x,e.y-12,''+Math.round(dm*10)/10,[230,210,180],0);
- if(e.hp<=0){e.dead=1;S.stats.kills++;S.stats.kt[e.type]=(S.stats.kt[e.type]||0)+1;if(S.stats.kills>=100)ach('kills');
+ if(e.hp<=0){e.dead=1;enemyReward(e);S.stats.kills++;S.stats.kt[e.type]=(S.stats.kt[e.type]||0)+1;if(S.stats.kills>=100)ach('kills');
   if(e.boss){bossDefeated(e);return}
   if(e.type==='sporeling'){sporeBurst(e,false);return}
   SND.edie(e.x);for(let n=0;n<12;n++)part({x:e.x,y:e.y,vx:rnd(-70,70),vy:rnd(-70,70),z:4,vz:rnd(30,80),life:rnd(.5,1),col:e.type==='stalker'?[140,130,120]:e.type==='wraith'?[170,200,220]:[60,52,44]});
   const r=Math.random();if((e.type==='crawler'||e.type==='spitter')&&r<.35)drop('chitin',e.x,e.y);else if(e.type==='golem'){drop(pickOre(e.k),e.x,e.y);drop(pickOre(e.k),e.x,e.y)}else if(e.type==='burrower'&&r<.4)drop(pickOre(e.k),e.x,e.y);else if(e.type==='wraith'&&r<.3)drop(ACT?'frostite':'bolts',e.x,e.y);else if(e.type==='stalker'&&r<.2)drop('oil',e.x,e.y)}}
 
 // ---------- creature sprites ----------
-function drawEnemy(e,camx,camy){const x=Math.round(e.x-camx),y=Math.round(e.y-camy);if(x<-30||y<-40||x>VW+30||y>VH+30||e.under)return;const w=e.fl>0?'#e8e0d0':null,s=e.vx>=0?1:-1;cx.globalAlpha=clamp(e.alpha==null?1:e.alpha,0,1);
+function drawEnemy(e,camx,camy){if(drawRootEnemy(e,camx,camy)||drawFrozenEnemy(e,camx,camy))return;const x=Math.round(e.x-camx),y=Math.round(e.y-camy);if(x<-30||y<-40||x>VW+30||y>VH+30||e.under)return;const w=e.fl>0?'#e8e0d0':null,s=e.vx>=0?1:-1;cx.globalAlpha=clamp(e.alpha==null?1:e.alpha,0,1);
  switch(e.type){
  case 'crawler':{const c=w||(ACT?'#3e4650':e.k>=4?'#4a2a22':'#3a332c'),hl=w||'#5e5246',j=e.st==='wind'?ri(-1,1):0,lg=Math.floor(e.an*12)%2;px(x-6,y+2,12,3,'rgba(0,0,0,.35)');
   for(const i of[-3,0,3]){px(x+i+j,y-5+((lg+i)&1),1,2,w||'#221c18');px(x+i+j,y+3+((lg+i+1)&1),1,2,w||'#221c18')}
