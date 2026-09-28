@@ -23,3 +23,13 @@ Extraction/death clears the checkpoint and writes the banked inventory, payment,
 - Browser crash: the latest successful checkpoint survives. Up to twenty seconds can be lost between periodic checkpoints; page-hide saving is best effort.
 
 No schema migration writes server data. There are no accounts, network saves or external dependencies.
+
+## Pixel camp and animation update
+
+No schema or storage-key change. Building discovery, construction and guide milestones use existing save fields. New scenery, walking trails, camera position and sprite caches are transient. Existing run checkpoints without a last rendered facing direction default to facing down until the player moves. Camp movement boundaries and station locations are reconstructed from the current layout on entry; saved resources and progression are retained.
+
+## Playable Blackwood arrival
+
+Schema v3 and the original storage key remain unchanged. The existing validated `exp.flags` dictionary now accepts `intro_heater`, `intro_journal`, `intro_generator`, `intro_radio`, `intro_lift` and `intro_done` (boolean flags). An interrupted prologue resumes at the next unfinished action; a reload during the final cage movement replays only that last step. Missing flags are safe. Completed or established characters are not forced into the prologue, and New Game+ retains completion. Menu replay uses only temporary scene state and cannot grant rewards, spend materials, overwrite an expedition checkpoint or mark story progress. Skip sets the briefing flags and enters normal camp without starting a run.
+
+A discovered `inheritance` journal entry adds the grandfather’s history. Existing story and quest entries are retained. New cave generation has fewer optional landmarks; checkpoint tile arrays and stored POIs still restore existing expeditions.

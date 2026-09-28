@@ -28,15 +28,17 @@ function px(x,y,w,h,c){cx.fillStyle=c;cx.fillRect(x,y,w,h)}
 function plot(x,y,c){cx.fillStyle=c;cx.fillRect(Math.round(x),Math.round(y),1,1)}
 function drawPlayer(camx,camy){const x=Math.round(P.x-camx),y=Math.round(P.y-camy),f=P.face,bob=(Math.floor(P.walk/8)%2)&&Math.hypot(P.vx,P.vy)>10?1:0,fl=(P.inv>0&&Math.floor(TT*20)%2)||P.dead;
  const W=fl?'#e8e0d0':null;if(P.dead)cx.globalAlpha=Math.max(0,1-RUN.deathT/2);
- const ar=S.gear.armor>=0?MATC[ARMOR_M[S.gear.armor]]:null,body=W||(ar?css(ar.map(v=>v*.62)):'#6e5238'),bodyS=W||(ar?css(ar.map(v=>v*.45)):'#56402b');
- px(x-5,y+3,10,3,'rgba(0,0,0,.35)');const leg=Math.floor(P.walk/6)%2;px(x-3,y+1+(leg?0:1),2,3,W||'#2e2620');px(x+1,y+1+(leg?1:0),2,3,W||'#2e2620');
- const bx=f>0?x-6:x+3,full=P.pack.length/P.cap;px(bx,y-7-bob,3,6,W||'#5a4330');px(bx,y-7-bob,3,1,W||'#6b5139');if(full>.5)px(bx+(f>0?-1:3),y-6-bob,1,4,W||'#4a3525');
- px(x-3,y-7-bob,6,8,body);px(f>0?x-3:x+2,y-7-bob,1,8,bodyS);px(x-3,y-2-bob,6,1,W||'#3a2a1c');if(ar)px(x-2,y-6-bob,1,2,W||css(ar));
- px(x-2,y-11-bob,5,4,W||'#b58f70');px(f>0?x+1:x-2,y-10-bob,1,1,'#2a1e16');px(x-3,y-13-bob,7,3,W||'#8c7440');px(x-3,y-11-bob,7,1,W||'#6c5a32');px(f>0?x+3:x-4,y-12-bob,1,2,P.oil>0?'#ffe6b0':'#55503a');
- const hx=x+f*2,hy=y-4-bob,held=P.sw>0?P.swk:SLOTS[P.slot];
- if(held==='sword'&&S.gear.sword>=0){const c=css(MATC[SWORD_M[S.gear.sword]]),off=P.sw>0?(-1.5+(1-P.sw)*3):-.7,a=P.aim+off*f,ca=Math.cos(a),sa=Math.sin(a);for(let i=1;i<14;i++)plot(hx+ca*i,hy+sa*i,W||(i<4?'#5a4030':c));for(let j=-2;j<=2;j++)plot(hx+ca*4-sa*j,hy+sa*4+ca*j,W||'#8a7050')}
+ const ar=S.gear.armor>=0?MATC[ARMOR_M[S.gear.armor]]:null;
+ const moving=P.renderMoving??(Math.hypot(P.vx,P.vy)>10),active=P.sw>0,held=active?P.swk:SLOTS[P.slot];
+ const dir=active?minerDirection(Math.cos(P.aim)*10,Math.sin(P.aim)*10):minerDirection(P.vx,P.vy,P.renderDir||'down');P.renderDir=dir;
+ const action=P.dead?'death':P.inv>.32?'hurt':P.rope>=0?'climb':active?(held==='sword'?'melee':held==='bow'?'shoot':'mine'):moving?'walk':'idle';
+ const frame=P.dead?Math.min(3,Math.floor(RUN.deathT*5)):action==='hurt'?Math.min(3,Math.floor((.55-P.inv)*16)):active?(held==='bow'?Math.min(3,Math.floor((1-P.sw/.5)*4)):Math.min(5,Math.floor((1-P.sw)*6))):action==='climb'?Math.floor(P.rope*8)%4:moving?Math.floor(P.walk/7)%8:S.set.reduced?0:Math.floor(RUN.t*1.2)%4;
+ drawMiner(x,y,{color:ar?css(ar.map(v=>v*.6)):'#7e6845',action,frame,dir,lamp:P.oil>0,flash:W,pack:P.pack.length/P.cap});
+ if(P.dead){cx.globalAlpha=1;return}
+ const hx=x+f*3,hy=y-7-(moving?MINER_WALK[frame%8].bob:0),toolFrame=active?MINER_STRIKE[clamp(frame,0,5)]:null;
+ if(held==='sword'&&S.gear.sword>=0){const c=css(MATC[SWORD_M[S.gear.sword]]),off=P.sw>0?(toolFrame.tool):-.7,a=P.aim+off*f,ca=Math.cos(a),sa=Math.sin(a);for(let i=1;i<14;i++)plot(hx+ca*i,hy+sa*i,W||(i<4?'#5a4030':c));for(let j=-2;j<=2;j++)plot(hx+ca*4-sa*j,hy+sa*4+ca*j,W||'#8a7050')}
  else if(held==='bow'&&S.gear.bow>=0){const c=css(MATC[BOW_M[S.gear.bow]]),a=P.aim,ca=Math.cos(a),sa=Math.sin(a);for(let j=-5;j<=5;j++){const bk=Math.abs(j)*Math.abs(j)*.1;plot(hx+ca*(6-bk)-sa*j,hy+sa*(6-bk)+ca*j,W||c)}for(let j=-4;j<=4;j++)plot(hx+ca*3.5-sa*j,hy+sa*3.5+ca*j,'rgba(220,210,190,.6)');for(let i=0;i<7;i++)plot(hx+ca*i,hy+sa*i,W||'#6a5038')}
- else{const off=P.sw>0?(-1.4+(1-P.sw)*2.6):-1.1,a=P.aim+off*f,ca=Math.cos(a),sa=Math.sin(a),hc=css(MATC[PICK_M[S.gear.pick]]);for(let i=0;i<10;i++)plot(hx+ca*i,hy+sa*i,W||'#7a5a38');const ex=hx+ca*9,ey=hy+sa*9;for(let j=-3;j<=3;j++)plot(ex-sa*j,ey+ca*j,W||(Math.abs(j)===3?'#5a5a60':hc))}
+ else{const off=P.sw>0?(toolFrame.tool):-1.1,a=P.aim+off*f,ca=Math.cos(a),sa=Math.sin(a),hc=css(MATC[PICK_M[S.gear.pick]]);for(let i=0;i<10;i++)plot(hx+ca*i,hy+sa*i,W||'#7a5a38');const ex=hx+ca*9,ey=hy+sa*9;for(let j=-3;j<=3;j++)plot(ex-sa*j,ey+ca*j,W||(Math.abs(j)===3?'#5a5a60':hc))}
  cx.globalAlpha=1}
 function render(){
  cx.imageSmoothingEnabled=false;cx.globalCompositeOperation='source-over';cx.globalAlpha=1;cx.fillStyle='#000';cx.fillRect(0,0,VW,VH);if(!tiles)return;

@@ -2,7 +2,15 @@
 // DEEP BELOW v2 - UI, camp, HUD, input, main loop
 const cv=$('game'),cx=cv.getContext('2d'),fxc=$('fx'),fx=fxc.getContext('2d'),wrap=$('wrap');
 cv.width=VW;cv.height=VH;
-function resize(){const portrait=innerWidth<700&&innerHeight>innerWidth,s=Math.min(innerWidth/VW,innerHeight/VH),w=Math.floor(VW*s),h=Math.floor(VH*s),areaH=portrait?innerHeight:h;wrap.style.width=w+'px';wrap.style.height=areaH+'px';for(const c of [cv,fxc]){c.style.height=h+'px';c.style.top=portrait?Math.floor((innerHeight-h)*.43)+'px':'0'}const d=Math.min(2,window.devicePixelRatio||1);fxc.width=Math.floor(w*d);fxc.height=Math.floor(h*d);wrap.style.fontSize=portrait?'12px':Math.max(10,h/40)+'px'}
+let campViewport=false;
+function resize(){
+ campViewport=(state==='surface'&&CAMP.active)||state==='intro';wrap.classList.toggle('in-camp',campViewport);wrap.classList.toggle('in-intro',state==='intro');
+ const portrait=innerWidth<700&&innerHeight>innerWidth,s=Math.min(innerWidth/VW,innerHeight/VH),w=campViewport?innerWidth:Math.floor(VW*s),h=campViewport?innerHeight:Math.floor(VH*s),areaH=portrait?innerHeight:h,d=Math.min(2,window.devicePixelRatio||1);
+ wrap.style.width=w+'px';wrap.style.height=areaH+'px';
+ cv.width=campViewport?Math.ceil(w/campPixelScale()):VW;cv.height=campViewport?Math.ceil(h/campPixelScale()):VH;
+ for(const c of [cv,fxc]){c.style.height=h+'px';c.style.top=portrait&&!campViewport?Math.floor((innerHeight-h)*.43)+'px':'0'}
+ fxc.width=Math.floor(w*d);fxc.height=Math.floor(h*d);wrap.style.fontSize=campViewport?'16px':portrait?'12px':Math.max(10,h/40)+'px';
+}
 addEventListener('resize',resize);resize();
 const img=(src,c)=>`<img class='ic ${c||''}' src='${src}'>`;
 
@@ -132,7 +140,7 @@ $('ngbox').addEventListener('click',e=>{const m=e.target.closest('[data-mod]');i
 // ---------- info screens ----------
 let infoBack='menu';
 function showInfo(h,back){infoBack=back;$('info').innerHTML=`<button id='b-info-close' class='info-close'>BACK</button>`+h+`<div class='c sec'><button id='b-back'>BACK</button></div>`;showPanel('info')}
-const HOW=`<h2>HOW TO PLAY</h2><div class='list'>
+const HOW=`<h2>HOW TO PLAY</h2><p><b>Your first trip:</b> Play the short arrival scene, or skip to camp and follow the gold trail to the lift. Below, mine two copper and follow blue lamps to Iona’s relay. Return to the starting lift and press E to bank your haul. You do not need to reach the bottom.</p><p>In camp, <b>GUIDE / ?</b> explains your next step. <b>PLACES / C</b> shows every building symbol and can mark a walking route.</p><div class='list'>
 <p><b class='gold'>The loop.</b> Descend, mine, fight, and get back to a lift before your lamp dies. Ore goes into your <b>stash</b>: forge gear with it or sell it at the Market.</p>
 <p class='sec'><b class='gold'>The risk.</b> Die and your backpack is lost. Deeper layers pay a cash depth bonus but hit much harder.</p>
 <p class='sec'><b class='gold'>Gear.</b> Forge pickaxes (they break layer seals), swords, ranged weapons and armor. Old Marrow gives quests with rewards.</p>
@@ -149,12 +157,12 @@ $('info').addEventListener('click',e=>{if(e.target.id==='b-back'||e.target.id===
 $('info').addEventListener('input',e=>{const id=e.target.dataset.set;if(!id)return;S.set[id]=+e.target.value;AU.vol();save();const o=$('v-'+id);if(o)o.textContent=Math.round(S.set[id]*100)+'%'});
 
 // ---------- menu & pause ----------
-function showMenu(){state='menu';clearInputs();$('hud').style.display='none';$('campbar').style.display='none';$('objective').style.display='none';$('interact').style.display='none';$('touch-controls').classList.remove('on');$('b-play').textContent=S.checkpoint?'RESUME EXPEDITION':S.lastResult?'VIEW LAST RETURN':'ENTER CAMP';$('b-ngp').style.display=S.won?'block':'none';showPanel('menu');if(MUS.mode!=='menu')MUS.set('menu',0,0)}
+function showMenu(){state='menu';clearInputs();$('hud').style.display='none';$('campbar').style.display='none';$('objective').style.display='none';$('interact').style.display='none';$('touch-controls').classList.remove('on');$('b-play').textContent=S.checkpoint?'RESUME EXPEDITION':S.lastResult?'VIEW LAST RETURN':!S.exp.flags.briefed&&!S.stats.runs&&!S.ng?'BEGIN YOUR STORY':'ENTER CAMP';$('b-ngp').style.display=S.won?'block':'none';showPanel('menu');if(MUS.mode!=='menu')MUS.set('menu',0,0)}
 const btn=(id,f)=>$(id).addEventListener('click',()=>{AU.init();SND.ui();f()});
 btn('b-play',()=>{if(storageLocked){showInfo('<h2>SAVE RECOVERY</h2><p>'+esc(storageWarning)+'</p>','menu');return}if(S.checkpoint)resumeExpedition();else if(S.lastResult){state='results';showResults(S.lastResult)}else enterCamp()});btn('b-ngp',()=>showNG());
 btn('b-how',()=>showInfo(HOW,'menu'));btn('b-ach',()=>showInfo(achHTML(),'menu'));btn('b-stats',()=>showInfo(statsHTML(),'menu'));btn('b-set',()=>showInfo(settingsHTML(),'menu'));
 btn('b-save',()=>downloadSave());btn('b-load',()=>$('save-file').click());
-btn('b-resume',()=>togglePause());btn('b-pset',()=>showInfo(settingsHTML(),'pause'));btn('b-phow',()=>showInfo(HOW,'pause'));btn('b-pcamp',()=>showInfo('<h2>CAMP FIELD GUIDE</h2><p>'+nextGoal()+'</p><p>Bank ore at a lift; restore stations at home. Forge and refinery are northwest; Archive and storage southwest; lift southeast. Discovered stations have C shortcuts at camp.</p>','pause'));
+btn('b-resume',()=>togglePause());btn('b-pset',()=>showInfo(settingsHTML(),'pause'));btn('b-phow',()=>showInfo(HOW,'pause'));btn('b-pcamp',()=>showInfo(guideHTML(false),'pause'));
 $('save-file').addEventListener('change',e=>{importSaveFile(e.target.files[0],err=>{e.target.value='';if(err){alert(err.message);return}paused=false;P=null;state='menu';AU.vol();CAMP.active=false;CAMP.menu=null;showMenu()})});
 btn('b-abandon',()=>{if(confirm('Abandon this run? Your backpack will be lost.')){paused=false;showPanel(null);P.hp=0;P.dead=1;endRun(false)}});
 function togglePause(){if(state!=='run'||!P||P.dead||$('p-victory').classList.contains('on'))return;paused=!paused;M.l=M.r=false;showPanel(paused?'pause':null)}
@@ -170,11 +178,11 @@ addEventListener('mouseup',e=>{if(e.button===0)M.l=false;else if(e.button===2)M.
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('wheel',e=>{if(state==='run'&&!paused&&P){e.preventDefault();cycleSlot(e.deltaY>0?1:-1)}},{passive:false});
 const touchControls=$('touch-controls');
-touchControls.addEventListener('pointerdown',e=>{const el=e.target.closest('[data-touch-key],[data-touch-hold],[data-touch-action]');if(!el)return;e.preventDefault();if(e.isTrusted)el.setPointerCapture?.(e.pointerId);const key=el.dataset.touchKey,hold=el.dataset.touchHold,action=el.dataset.touchAction;if(key){K[key]=true;el.classList.add('on')}else if(hold){if(hold==='use'){M.l=true;M.lp=true;if(state==='run'&&!paused&&P&&!P.dead&&P.slot>=3){useSlot();M.lp=false;}}else if(hold==='mine')M.r=true;el.classList.add('on')}else if(action==='interact'){if(state==='surface')campInteract();else interactWorld()}else if(action==='ability')useAbility();else if(state!=='run'||paused||!P||P.dead)return;else if(action==='tonic')useTonic();else if(action==='flare')throwFlare();else if(action==='scan')doScan();else if(action==='rope')useRope();else if(action==='pause')togglePause()});
+touchControls.addEventListener('pointerdown',e=>{const el=e.target.closest('[data-touch-key],[data-touch-hold],[data-touch-action]');if(!el)return;e.preventDefault();if(e.isTrusted)el.setPointerCapture?.(e.pointerId);const key=el.dataset.touchKey,hold=el.dataset.touchHold,action=el.dataset.touchAction;if(key){K[key]=true;el.classList.add('on')}else if(hold){if(hold==='use'){M.l=true;M.lp=true;if(state==='run'&&!paused&&P&&!P.dead&&P.slot>=3){useSlot();M.lp=false;}}else if(hold==='mine')M.r=true;el.classList.add('on')}else if(action==='interact'){if(state==='intro')interactIntro();else if(state==='surface')campInteract();else interactWorld()}else if(action==='ability')useAbility();else if(state!=='run'||paused||!P||P.dead)return;else if(action==='tonic')useTonic();else if(action==='flare')throwFlare();else if(action==='scan')doScan();else if(action==='rope')useRope();else if(action==='pause')togglePause()});
 touchControls.addEventListener('pointerup',e=>{const el=e.target.closest('[data-touch-key],[data-touch-hold]');if(!el)return;e.preventDefault();const key=el.dataset.touchKey,hold=el.dataset.touchHold;if(key)K[key]=false;if(hold==='use')M.l=false;if(hold==='mine')M.r=false;el.classList.remove('on')});
 touchControls.addEventListener('pointercancel',e=>{const el=e.target.closest('[data-touch-key],[data-touch-hold]');if(!el)return;const key=el.dataset.touchKey,hold=el.dataset.touchHold;if(key)K[key]=false;if(hold==='use')M.l=false;if(hold==='mine')M.r=false;el.classList.remove('on')});
 addEventListener('click',()=>AU.init());
-addEventListener('keydown',e=>{AU.init();const k=e.key.toLowerCase();if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)||(e.target.tagName==='BUTTON'&&(k===' '||k==='enter')))return;if(state==='run'&&!paused&&(k===' '||k.startsWith('arrow')||k==='tab'))e.preventDefault();K[k]=true;if(e.repeat)return;
+addEventListener('keydown',e=>{AU.init();const k=e.key.toLowerCase();if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)||(e.target.tagName==='BUTTON'&&(k===' '||k==='enter')))return;if((state==='intro'||state==='run'&&!paused)&&(k===' '||k.startsWith('arrow')||k==='tab'))e.preventDefault();K[k]=true;if(e.repeat)return;
  if(state!=='run'||!P)return;if(k==='escape'){togglePause();return}if(paused||P.dead)return;
  if(k>='1'&&k<='6')selectSlot(+k-1);else if(k==='e')interactWorld();else if(k==='q')useTonic();else if(k==='f')throwFlare();else if(k==='r')useRope();else if(k===' '&&RUN.onLift>=0)endRun(true)});
 addEventListener('keyup',e=>{K[e.key.toLowerCase()]=false});
@@ -187,11 +195,12 @@ function prefetch(){const cs=CH*TS,c0=Math.floor((cam.x-VW/2)/cs)-1,c1=Math.floo
 let last=performance.now();
 function frame(now){let dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;TT+=dt;
  try{
-  if(state==='run'){if(wheelOn)dt*=.3;if(!paused){if(hitstop>0){hitstop-=dt;updFX(dt*.15)}else{update(dt);if(state==='run')updFX(dt)}}}else if(state==='surface'&&CAMP.active)updateCamp(dt);else attract(dt);
-  MUS.update(dt);tickUI(dt);if(state==='surface'&&CAMP.active)renderCamp();else if(tiles){prefetch();render()}if(state==='run'&&P)updHUD();else if(wheelOn){wheelOn=false;$('wheel').style.display='none'}
+  if(campViewport!==((state==='surface'&&CAMP.active)||state==='intro')||wrap.classList.contains('in-intro')!==(state==='intro'))resize();
+  if(state==='intro')updateIntro(dt);else if(state==='run'){if(wheelOn)dt*=.3;if(!paused){if(hitstop>0){hitstop-=dt;updFX(dt*.15)}else{update(dt);if(state==='run')updFX(dt)}}}else if(state==='surface'&&CAMP.active)updateCamp(dt);else attract(dt);
+  MUS.update(dt);tickUI(dt);if(state==='intro')renderIntro();else if(state==='surface'&&CAMP.active)renderCamp();else if(tiles){prefetch();render()}if(state==='run'&&P)updHUD();else if(wheelOn){wheelOn=false;$('wheel').style.display='none'}
  }catch(err){console.error(err);paused=true;if(state==='run'){showPanel('pause');$('objective').textContent='Simulation paused after an error. Export your character before reloading.'}}
  requestAnimationFrame(frame)}
 
 // ---------- boot ----------
-setupExpansionUI();load();setInterval(()=>{if((state==='run'||state==='surface')&&save())toast('AUTOSAVED','autosave')},60000);setAct(0);genWorld(4242);{const l=lifts[0];cam.x=(l.x+1)*TS;cam.y=(l.y+6)*TS;A.x=cam.x;A.y=cam.y}
+setupExpansionUI();setupIntroUI();load();setInterval(()=>{if((state==='run'||state==='surface')&&save())toast('AUTOSAVED','autosave')},60000);setAct(0);genWorld(4242);{const l=lifts[0];cam.x=(l.x+1)*TS;cam.y=(l.y+6)*TS;A.x=cam.x;A.y=cam.y}
 if(matchMedia('(prefers-reduced-motion: reduce)').matches){S.set.reduced=1;S.set.shake=0}showMenu();if(storageWarning)toast(esc(storageWarning));MUS.mode='menu';requestAnimationFrame(frame);

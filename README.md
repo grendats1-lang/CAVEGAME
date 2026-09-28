@@ -14,7 +14,9 @@ Visit `http://localhost:8000`. There is no installation or build step. All scrip
 
 ## Your first chapter
 
-You are the camp’s recovery miner. Old Marrow’s niece Iona has transmitted a signal from a supposedly abandoned shaft. Walk east to the lift, select **Iona’s Last Signal**, and descend. Copper near the lift repairs her relay; taking its battery offers a more dangerous alternative. Follow the cyan marker, read the signal, and return to a lift. Your first successful return restores the Archive and pays enough for an early tool or camp project.
+You inherited your grandfather’s journal and spent ten years buying back Blackwood Mine. A new character begins in a rain-soaked staging shed: walk to the heater, read the journal, start the generator, answer Marrow’s radio and lower the cage. The five-step prologue is designed for roughly 1–2 minutes, has no forced reading delays, and can be skipped to camp at any time. Completed steps survive reload; **Play Prologue** on the menu replays it without changing your character or saved expedition.
+
+Marrow’s niece Iona followed the same sketch and has transmitted a signal from below. The prologue leads straight into **Iona’s Last Signal**. If you skip it, follow the gold trail through camp to the lift. Copper near the lift repairs her relay; taking its battery offers a more dangerous alternative. Follow the cyan marker, read the signal, and return to a lift. Your first successful return restores the Archive and pays enough for an early tool or camp project.
 
 The initial oil supply is six minutes, plus loadout/project bonuses. A direct route is deliberately short; detours offer rescue, resource and story choices. Oil, backpack space and health make continued exploration a decision.
 
@@ -32,7 +34,8 @@ The initial oil supply is six minutes, plus loadout/project bonuses. A direct ro
 | Q / F / R | Tonic / flare / escape rope |
 | Z / ABILITY | Lantern pulse: slows nearby creatures; 18-second cooldown |
 | B / G / H / V / Y | Bridge / decoy / heat pack / recorder / pollen infusion |
-| C / J (camp) | Discovered-station shortcuts / field journal |
+| C / J (camp) | Building symbols, walking routes and station shortcuts / field journal |
+| ? or / (camp) | Step-by-step field guide and current next action |
 | Escape | Pause underground; close a camp station |
 | Tab / Shift+Tab / Enter (menus) | Standard keyboard focus and activation |
 
@@ -52,6 +55,10 @@ Touch has directional and action buttons, plus a contextual interaction button. 
 - **Signal Tower:** five expedition conditions, daily seed text and custom seeds.
 - **Root Garden:** late research and +45 oil in Act III.
 - **Safe Storage / market:** lock materials against all sale actions. Locked stock remains available for crafting. Rare and refined materials are automatically protected. Sale confirmation reminds you about crafting and contract needs.
+
+The camp is drawn on a low-resolution pixel canvas with a close following camera. Worn paths connect irregular work areas, tents, a kiln, open workshops and stone ruins. Workers haul supplies, Bera hammers at her station, residents take short walks, and cloth, fire and machinery animate on discrete frames. Building signs use pictograms; readable names appear when you approach.
+
+Open **GUIDE / ?** for your next step, the first expedition checklist, and practical controls. Open **PLACES / C** and select **Show route** to mark a collision-aware walking trail to any building. The guide advances using your existing story and equipment progress. Camp touch controls show movement and contextual interaction.
 
 Every station can be reached on foot. Visit once to unlock its camp-map shortcut. Construction changes the building, lights and machinery. NPCs react to discoveries, rescues, deaths and victories; several have personal requests. The campfire and recovered miners provide a quiet moment between runs.
 
@@ -90,7 +97,10 @@ Master/music/effects volume, screen shake, particles, extra cave contrast and re
 - `world.js`: seeded cave generation, painter, chunks, minimap and icons.
 - `game.js`: lifecycle, movement, mining, inventory, weapons and hazards.
 - `enemies.js`: original enemy/boss state machines and rendering.
-- `render.js`: sprites, lighting and effects.
+- `sprites.js`: cached pixel frames, four directions, eight-frame walks, mining/melee, shooting, hurt, climbing and death poses.
+- `render.js`: player animation selection, lighting and effects.
+- `camp.js`: camp pixel art, scenery, resident routines, building symbols, guide and walking routes.
+- `intro.js`: playable Blackwood arrival, progress flags, replay isolation, rain and cage sequence.
 - `expansion.js`: walkable hub, story/events, connected landmarks, contracts, Root mechanics/enemies, endings and checkpoints.
 - `ui.js`: panels, HUD, controls and frame loop.
 
@@ -102,8 +112,17 @@ No test library is required. JavaScript syntax can be checked with `node --check
 await eval(await (await fetch('/tests/browser-checks.js')).text());
 await eval(await (await fetch('/tests/systems-checks.js')).text());
 await eval(await (await fetch('/tests/edge-checks.js')).text());
+await eval(await (await fetch('/tests/camp-presentation-checks.js')).text());
+await eval(await (await fetch('/tests/intro-checks.js')).text());
+await eval(await (await fetch('/tests/arrival-world-checks.js')).text());
 ```
 
 Those harnesses restore their initial saved character in `finally`; they exercise synthetic progression to reach late content. `tests/opening-playthrough.js` deliberately starts a fresh character and follows the opening using real movement, mining, combat and collection updates. It reports **simulation time**, not human reading or decision time. Never run it in a page containing a valued character.
 
 See [PLAYTEST_REPORT.md](PLAYTEST_REPORT.md) for exact tested flows, timings, limitations and balance questions. Long-term balance and subjective fun require human sessions; automated checks cannot establish them.
+
+### Mine atmosphere and movement
+
+The Old Mine has one optional landmark per layer, plus its guaranteed contract and first-chapter shelter. Later acts have two per layer plus authored story locations. Ordinary objects use worn wood, iron and muted amber; only the mission relay retains blue illumination. Mandatory objectives and their access paths remain guaranteed.
+
+Miner frames are about 12% shorter with unchanged collision boundaries. Walking advances every seven traveled pixels (previously four), uses stable diagonal facing and stops animating when blocked.

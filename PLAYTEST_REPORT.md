@@ -92,3 +92,27 @@ The weakest areas are long-term pacing and encounter authorship. The side destin
 7. Optional variants are local destinations/events, not full independent dungeon acts. Some NPCs share contextual dialogue patterns. The training yard is a readout. These are functional but shallower than the most ambitious parts of the brief.
 8. Reduced motion disables shake and UI transitions; some ambient canvas motion remains. Canvas combat is not fully screen-reader accessible.
 9. No multi-hour memory/audio test, physical-phone benchmark, exhaustive accessibility audit, or full natural-progression campaign playthrough was performed.
+
+## Pixel RPG camp correction — 2026-09-28
+
+This pass replaces the rejected high-resolution camp presentation with an integer pixel surface, a darker material palette, irregular footpaths and distinct work areas. The readable guide and close camera remain.
+
+- **46 browser assertions passed** in `tests/camp-presentation-checks.js`: all 15 walking routes and their segments, building collision, discovery/interactions, guide progression, pointer cancellation, canvas transitions, death respawn, eight distinct walk frames in each direction, multiple action silhouettes, courier navigation and bounded sprite caching. Tests block save writes and run in a disposable browser page.
+- An initial test found an invalid tool-frame index under an exaggerated hurt timer; clamping resolved it. The final pass has no failed assertions.
+- **Opening regression:** moved, mined and collected seven deposits, fought the crawler, threw a flare, recovered the relay, collected the chest and returned to the lift. Timings: ore cluster 6 s; seven ore 26 s; encounter/flare 35 s; relay 37 s; chest 41 s; return 48 s. These are scripted simulation seconds, not human pacing. One contract, the Archive and $180 were earned.
+- **Visual checks:** desktop 1280×800, portrait 390×844 and landscape 844×390. Camp now uses roughly 3 screen pixels per source pixel; text stays separately readable. Pixel character sheet and animated walk preview captured. Physical phones remain untested.
+- **Timing:** 120 camp frames averaged 16.64 ms, p95 16.80 ms, with 149 cached sprite frames; no document horizontal overflow. This is a short desktop sample, not a performance guarantee for every device.
+- **Review:** CodeRabbit was disabled by task configuration; no automated review completed.
+
+Player-facing assessment: the camp reads as a worn mining outpost instead of a row of matching shop plots. Directional walking, planted-foot poses and distinct attack/recovery frames make movement more legible. The first-trip guide reduces menu searching. The art direction still needs the player's judgment; no claim is made that automated checks measure atmosphere or enjoyment.
+
+## Playable arrival and mine atmosphere — 2026-09-28
+
+- **Prologue: 36 assertions passed.** Walked the actual update/collision path to all five interactions; verified each stage, progress persistence, skip, replay isolation, migration of partial progress, focus loss, touch/click resumption during the cage transition, and one automatic first expedition. Controlled walking time: **13.47 simulation seconds**; reading estimate at 198 words/minute: **69.4 seconds**, plus **3.6 seconds** for the cage (roughly 87 seconds combined). This supports a 1–2 minute target; it is not a first-time human usability measurement. Players may linger, and Skip to camp is always available.
+- **World generation: 120 assertions passed across 36 seeds.** Deterministic tiles, decor, landmark state, lights and loose items; every landmark and boss approach reachable; one optional point per Old Mine layer; no optional landmark emits blue light. The mission objective remains guaranteed.
+- **Camp/animation: 47 assertions passed.** Includes previous route/UI coverage, distinct animation frames, and a new check that blocked walking does not advance the gait.
+- **Opening expedition regression passed.** Ore cluster 6 s; seven ore collected 27 s; crawler and flare 37 s; relay 40 s; chest 45 s; extraction 52 s. All times are simulation seconds. No reported errors.
+- **Browser presentation:** inspected desktop 1280×800 and portrait 390×844 intro scenes; actual button click lit the heater and displayed the next story text. Captured `output/blackwood-arrival.png`. The earlier camp pass covers landscape presentation; a physical-phone playthrough remains untested.
+- An inspection found that the paused cage sequence initially blocked its Resume button; it was fixed and covered by the final prologue test. Syntax and patch whitespace pass. CodeRabbit review remains disabled by task configuration.
+
+The prologue uses lamp oil and backpack limits as the expedition constraints. Its generator powers the arrival animation; it does not imply an unimplemented fuel or oxygen countdown. The protagonist’s inherited claim and grandfather’s journal now lead into Iona and Marrow’s existing campaign.

@@ -129,6 +129,7 @@ const RELICS=[
  ['heart','Heart of the World','Something living has trusted you with its future.']
 ];
 const BEATS={
+ inheritance:['Blackwood · your grandfather’s journal','Forty years ago, the company buried his name with the collapse. His last pages describe a fissure below the worked seam. Ten years at the scrapyard bought the deed back. The mine belongs to you now.'],
  arrival:['Old Marrow','You’re the recovery miner. My niece Iona went below with my old relay. Last night it tapped her name.'],
  descent:['Your field log','Mine copper beside the lift. The relay beyond the blue lamps needs two pieces, or you can risk taking its battery. Bring the signal home.'],
  ore:['Iona · recording','Copper carries the signal. Please, leave enough for the lamps.'],

@@ -67,7 +67,7 @@ function update(dt){
   let mx=(K.d||K.arrowright?1:0)-(K.a||K.arrowleft?1:0),my=(K.s||K.arrowdown?1:0)-(K.w||K.arrowup?1:0);if(P.rope>=0){mx=0;my=0}
   const ln=Math.hypot(mx,my)||1,here=tAt(ptx,pty),ice=here===T.ICEFLOOR,sp=SPEED(lv('boots'))*(here===T.WATER?.55:here===T.SAP&&!ench('pick','rootcarver')&&RUN.x.heat<=0?.6:1)*(S.exp.loadout==='porter'?.85:1)*(ench('armor','porter')?.9:1)*(P.sw>0?.85:1),f=1-Math.exp(-dt*(ice?2.4:14));
   P.vx+=(mx/ln*sp-P.vx)*f;P.vy+=(my/ln*sp-P.vy)*f;const kd=Math.exp(-dt*9);P.kx*=kd;P.ky*=kd;
-  const ox=P.x,oy=P.y;const hit=moveBox(P,(P.vx+P.kx)*dt,(P.vy+P.ky)*dt,5,0);if(hit&&ice){P.vx*=.5;P.vy*=.5}const md=Math.hypot(P.x-ox,P.y-oy);RUN.moved+=md;P.walk+=md;P.step+=md;
+  const ox=P.x,oy=P.y;const hit=moveBox(P,(P.vx+P.kx)*dt,(P.vy+P.ky)*dt,5,0);if(hit&&ice){P.vx*=.5;P.vy*=.5}const md=Math.hypot(P.x-ox,P.y-oy);RUN.moved+=md;P.renderMoving=md>.015;P.walk+=md;P.step+=md;
   if(P.step>15){P.step=0;SND.step(here===T.WATER?1:ice?2:0);if(here===T.WATER)for(let i=0;i<3;i++)part({x:P.x,y:P.y+4,vx:rnd(-20,20),vy:rnd(-20,20),z:1,vz:rnd(20,50),life:.4,col:[120,140,150]});else part({x:P.x,y:P.y+4,vx:rnd(-8,8),vy:rnd(-4,4),life:.6,col:ice?[190,210,220]:[110,100,88],sz:2,type:'dust'})}
   if(ice)hintOnce('ice','<b>Ice!</b> You slide. Plan your stops.');
   P.cd-=dt;P.bcd-=dt;P.sw=Math.max(0,P.sw-dt/.16);P.inv-=dt;P.scanCD-=dt;

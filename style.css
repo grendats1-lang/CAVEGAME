@@ -160,3 +160,54 @@ select,input:not([type=range]){font:inherit;background:#162922;border:1px solid 
 #bossbar{top:4.8em}#msg{font-size:1.2em;max-width:88%;left:6%;width:88%;overflow-wrap:anywhere}#prompt{bottom:27%}
 #hotbar{pointer-events:auto}.hs{margin:0;padding:0;min-height:36px;min-width:36px;font-size:inherit}#fieldtools{position:absolute;right:1em;bottom:5em;display:flex;flex-direction:column;gap:4px;pointer-events:auto}#fieldtools button{font-size:.6em;padding:.5em;background:#153b32d9}@media(max-width:700px){#fieldtools{right:6px;bottom:150px;max-width:130px}#fieldtools button{font-size:10px;min-height:36px}#hotbar{max-width:96%;gap:2px}.hs{min-width:36px}}
 .info-close{position:sticky;top:0;float:right;z-index:2;background:#2c4237;margin:0 0 .6em 1em}
+/* Camp close-up: text stays in the DOM, independently of world zoom. */
+.in-camp{cursor:default!important}
+#camp-guide{display:none}
+.in-camp #campbar{padding:18px 24px;gap:10px;font:14px/1.4 system-ui,sans-serif;background:linear-gradient(180deg,#102724 70%,#102724e8);border-bottom:1px solid #8b9f7660;box-shadow:0 5px 25px #06141055}
+.in-camp #campbar .eyebrow{font:11px/1.4 'Courier New',monospace;letter-spacing:2px;color:#b0c3ad}
+.in-camp #campbar strong{font-size:18px;color:#f5e7bf;max-width:none}
+.in-camp #campbar button{font:12px/1.2 'Courier New',monospace;min-height:44px;padding:10px 14px;margin:0;background:#263e35;color:#f4e8c8;border:1px solid #698570}
+kbd{display:inline-block;font:12px/1.2 'Courier New',monospace;color:#f7e5b8;background:#344a3d;border:1px solid #798369;border-bottom-width:2px;border-radius:3px;padding:3px 5px;vertical-align:middle}
+.in-camp #camp-guide{display:flex;align-items:center;gap:12px;position:absolute;bottom:22px;left:24px;z-index:9;max-width:min(470px,calc(100% - 48px));padding:12px 14px;background:#102923f5;border:1px solid #a7ad7666;box-shadow:0 5px 20px #07171277;font:14px/1.45 system-ui,sans-serif;pointer-events:none}
+#camp-guide>div{min-width:0}#camp-guide strong{display:block;font-size:16px;color:#ffebba}#camp-guide p{color:#bfcebb;font-size:13px;line-height:1.4;margin-top:3px}#camp-guide .eyebrow{font-size:10px;color:#c1c8a5;letter-spacing:1.5px}#camp-guide>button{pointer-events:auto;margin:0 0 0 auto;min-width:40px;min-height:44px;font-size:18px;background:#314b3b;color:#ffe6aa}
+.station-symbol{width:40px;height:40px;flex-shrink:0;fill:#e9ce92;background:#253f35;border:1px solid #738265;vertical-align:middle;image-rendering:auto}
+.in-camp #interact{display:flex;align-items:center;gap:12px;bottom:115px;max-width:calc(100% - 32px);padding:10px 14px;text-align:left;background:#102d27f5;border:1px solid #c9cd91;box-shadow:0 5px 22px #071c1977;font:16px/1.4 system-ui,sans-serif;color:#fff1c6}
+#interact span{display:block}#interact small{display:block;font:13px/1.4 system-ui,sans-serif;color:#cedaca}#interact kbd{margin-left:auto}#interact .station-symbol{width:34px;height:34px}
+.in-camp:has(.panel.on) #camp-guide,.in-camp:has(.panel.on) #touch-controls{display:none}
+.in-camp .touch-actions{display:none}
+.in-camp .box{font:16px/1.5 system-ui,sans-serif;color:#e0e5d3;padding:24px;max-height:calc(100% - 32px)}
+.in-camp .box h2,.in-camp .box h3{font-family:'Courier New',monospace;letter-spacing:.03em}.in-camp .box h2{font-size:24px}.in-camp .box h3{font-size:17px}
+.in-camp .box .eyebrow{font-size:11px}.in-camp .box .dim,.in-camp .box small{color:#bdcbb8;font-size:14px}.in-camp .box button{font:13px/1.4 'Courier New',monospace;min-height:44px;padding:10px 13px;white-space:normal}
+.in-camp .box .card{font-size:14px}.in-camp .box .req,.in-camp .box .tag{font-size:12px}.in-camp .box p{font-size:15px}.in-camp .contract small{font-size:14px}.in-camp .contract span{font-size:13px}.in-camp .story-line{font-size:18px!important}
+.place-card{display:grid;grid-template-columns:42px 1fr;align-content:start;gap:12px;border:1px solid #5b725d;background:#253c321f;padding:16px}.place-card p{margin:6px 0;font-size:14px!important;line-height:1.5}.place-card .place-actions{grid-column:1/-1;display:flex;gap:8px}.place-actions button{flex:1;margin:0}.station-grid:has(.place-card){grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.guide-next{padding:20px;background:#304c3a;border-left:3px solid #ddc182;margin:16px 0}.guide-next p{margin:8px 0}.guide-next button .station-symbol{width:24px;height:24px;margin-left:8px;border:0}.guide-checklist{list-style:none;display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}.guide-checklist li{padding:6px 10px;background:#182d25;border:1px solid #60735d;font-size:13px}.guide-checklist li span{margin-right:8px}.guide-checklist .done{color:#acd9ad;border-color:#8cac72}.guide-lessons{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}.guide-lessons section{padding-top:12px;border-top:1px solid #5b6c54}.guide-lessons h3{margin-bottom:8px}
+@media(max-width:700px){
+ .in-camp #campbar{padding:10px 12px;gap:6px;flex-wrap:wrap}.in-camp #campbar>div{min-width:100%;padding:0}.in-camp #campbar strong{font-size:16px}.in-camp #campbar button{font-size:12px;min-height:40px;padding:7px 10px;flex:1}.in-camp #campbar kbd{display:none}.in-camp #campbar .eyebrow{font-size:10px;margin-bottom:2px}
+ .in-camp #camp-guide{top:120px;bottom:auto;left:12px;right:12px;max-width:none;padding:9px 10px;gap:8px}.in-camp #camp-guide strong{font-size:14px}.in-camp #camp-guide p{font-size:12px}.in-camp #camp-guide>.station-symbol{width:30px;height:30px}.in-camp #camp-guide>button{min-width:32px;padding:4px;font-size:16px}.in-camp #camp-guide .eyebrow{font-size:9px}
+ .in-camp #interact{bottom:130px;width:max-content;padding:9px 12px;font-size:15px;gap:8px}.in-camp #interact small{max-width:240px;font-size:12px}.in-camp #interact kbd{display:none}
+ .in-camp .touch-pad{bottom:18px;left:18px;width:144px;height:96px}.in-camp .touch-pad button{width:46px;height:46px;background:#1a352bef;border:1px solid #97aa80}.in-camp .touch-up{left:48px}.in-camp .touch-left{top:48px}.in-camp .touch-down{left:48px;top:48px}.in-camp .touch-right{left:96px;top:48px}
+ .in-camp .box{font-size:15px;padding:18px;max-height:96%}.in-camp .box .row{flex-wrap:wrap;gap:8px}.in-camp .box h2{font-size:21px}.guide-lessons{grid-template-columns:1fr}.in-camp .portrait{font-size:24px}.in-camp .story-line{font-size:16px!important}.in-camp .box .grid{grid-template-columns:1fr!important}
+}
+@media(max-height:500px) and (orientation:landscape){
+ .in-camp #campbar{padding:6px 12px;flex-wrap:nowrap}.in-camp #campbar>div{min-width:0}.in-camp #campbar strong{font-size:15px}.in-camp #campbar button{min-height:36px;flex:none}
+ .in-camp #camp-guide{top:auto;bottom:12px;left:auto;right:12px;max-width:310px;padding:7px 10px}.in-camp #camp-guide p{font-size:11px}.in-camp #camp-guide strong{font-size:13px}.in-camp #interact{bottom:90px;max-width:75%;font-size:14px;padding:6px 9px}
+}
+
+/* Keep camp text in the same restrained RPG vocabulary as the expedition UI. */
+.in-camp #campbar,.in-camp #camp-guide,.in-camp #interact,.in-camp #interact small,.in-camp .box{font-family:'Courier New',Courier,monospace}
+.in-camp #campbar{background:linear-gradient(#171e1c,#171e1cef);border-color:#645d43}
+.in-camp #camp-guide,.in-camp #interact{background:#181f1af5;border-color:#756d4c}
+.in-camp #campbar button,.in-camp #camp-guide>button{background:#2b3026;border-color:#6b7055}
+.in-camp .box{background:linear-gradient(135deg,#262b23,#181f1c)}
+
+#intro-ui{display:none}
+.in-intro #intro-ui{display:block;position:absolute;inset:0;z-index:12;pointer-events:none;font:15px/1.6 'Courier New',monospace}
+.in-intro #campbar,.in-intro #camp-guide,.in-intro #interact{display:none!important}
+#intro-ui header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 22px;background:#10191bef;border-bottom:1px solid #656853}
+#intro-ui header strong{display:block;color:#e5d6b2;font-size:18px}#intro-ui .eyebrow{font-size:11px;color:#a2b1a8}
+#intro-ui button{pointer-events:auto;min-height:44px;white-space:normal;font-size:12px;background:#293129;border-color:#897a51;color:#e9d5a3;padding:9px 12px}
+#intro-ui button:disabled{opacity:.55}
+.intro-caption{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);width:min(760px,calc(100% - 32px));background:#141e1bef;border:1px solid #7c7658;padding:18px 22px;color:#e0d5b9;box-shadow:0 8px 25px #0007}
+.intro-caption p{line-height:1.65}.intro-caption>div{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:12px}.intro-caption small{font-size:12px;color:#b0b8a5}
+@media(max-width:700px){#intro-ui header{padding:10px 12px;gap:8px}#intro-ui header strong{font-size:15px}#intro-ui header button{max-width:105px;flex-shrink:0;font-size:10px}#intro-ui .eyebrow{font-size:10px}.intro-caption{bottom:124px;padding:12px 14px;font-size:13px}.intro-caption>div{display:block;margin-top:8px}.intro-caption button{width:100%;margin:8px 0 0}.intro-caption small{font-size:10px}.intro-caption kbd{display:none}}
+@media(max-height:500px) and (orientation:landscape){#intro-ui header{padding:5px 12px}#intro-ui header strong{font-size:14px}.intro-caption{bottom:8px;left:auto;right:8px;transform:none;width:65%;padding:8px 12px;font-size:12px}.intro-caption>div{margin-top:3px}.intro-caption small{display:none}#intro-ui button{min-height:36px;margin:0}.intro-caption p{line-height:1.4}}
