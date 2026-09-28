@@ -7,24 +7,35 @@ const INTRO_STEPS=[
  {id:'radio',x:257,y:99,label:'Answer the radio',title:'An unexpected voice',line:'Three taps interrupt the engine’s rattle. Someone has been using your grandfather’s frequency.',after:'Marrow: “I worked with your grandfather. My niece Iona followed his sketch. Last night her relay tapped her name. Bring that signal home. Then I’ll tell you why we sealed the shaft.”'},
  {id:'lift',x:345,y:198,label:'Pull the cage lever',title:'The first descent',line:'A pick, a lamp, a little courage. Find copper beside the lift, follow the one blue relay signal, and bring Iona’s message back. The fortune can wait.',after:'The cable takes your weight. Rain becomes a whisper. Below, something knocks three times.'}
 ];
+const INTRO_CARDS=[
+ {title:'Forty years after…',line:'The collapse took your grandfather. The valley called him a liar. You kept his journal.'},
+ {title:'Tonight, you go back.',line:'Ten years of scrapyard shifts bought back Blackwood Mine. You rebuilt the cage yourself. Now his last sketch is in your hands.'}
+];
 let INTRO=null;
+function needsIntro(){return !S.exp.flags.briefed&&!S.exp.flags.intro_done&&S.stats.runs===0&&!S.ng&&S.gear.pick===0&&S.money===0&&!S.unl[1]}
+
 function introStage(flags=S.exp.flags){const n=INTRO_STEPS.findIndex(s=>!flags['intro_'+s.id]);return n<0?4:n}
 function beginIntro(replay=false){
  clearInputs();dialogue=null;paused=false;CAMP.active=false;CAMP.menu=null;state='intro';showPanel(null);$('hud').style.display='none';$('campbar').style.display='none';$('objective').style.display='none';$('interact').style.display='none';$('touch-controls').classList.add('on');
  const stage=replay?0:introStage(),previous=INTRO_STEPS[Math.max(0,stage-1)];
- INTRO={replay,stage,x:stage?previous.x:60,y:stage?previous.y+22:197,vx:0,vy:0,walk:0,dir:'right',t:0,sound:0,paused:false,reading:false,transition:0,done:INTRO_STEPS.map((s,i)=>i<stage),moving:false,actionTime:0};
+ INTRO={replay,stage,card:stage===0?0:-1,x:stage?previous.x:60,y:stage?previous.y+22:197,vx:0,vy:0,walk:0,dir:'right',t:0,sound:0,paused:false,reading:false,transition:0,done:INTRO_STEPS.map((s,i)=>i<stage),moving:false,actionTime:0};
  AU.init();MUS.set('camp',0,0);resize();refreshIntro();
 }
 function introBlocked(x,y){return x<42||x>375||y<82||y>227||[[159,202,93,112],[271,306,140,160],[243,272,82,100],[87,109,146,164]].some(([l,r,t,b])=>x>l&&x<r&&y>t&&y<b)}
 function introNear(){if(!INTRO)return false;const s=INTRO_STEPS[INTRO.stage];return Math.hypot(INTRO.x-s.x,INTRO.y-(s.y+18))<27}
 function introDirections(){if(!INTRO)return '';if(introNear())return innerWidth<700?'Tap the action below.':'Press E or click the action below.';const s=INTRO_STEPS[INTRO.stage],dx=s.x-INTRO.x,dy=s.y+18-INTRO.y,dir=['east','southeast','south','southwest','west','northwest','north','northeast'][(Math.round(Math.atan2(dy,dx)/(.25*Math.PI))+8)%8];return `Walk ${dir} · ${innerWidth<700?'use the direction pad':'WASD / arrows'}`}
-function refreshIntro(){if(!INTRO)return;const i=INTRO,s=INTRO_STEPS[i.stage];$('intro-ui').innerHTML=`<header><div><span class='eyebrow'>PROLOGUE · ${i.stage+1} / 5</span><strong>${esc(s.title)}</strong></div><button data-intro='skip'>${i.replay?'EXIT REPLAY':'SKIP TO CAMP'}</button></header><section class='intro-caption' aria-live='polite'><p>${esc(i.transition?s.after:i.reading?s.after:s.line)}</p><div><small id='intro-directions'>${i.paused?'Paused while away.':i.transition?'The cage is descending…':i.reading?'Take a moment, then continue.':introDirections()}</small><button data-intro='act' ${!i.paused&&(i.transition||!i.reading&&!introNear())?'disabled':''}>${i.paused?'RESUME':i.reading?'CONTINUE':s.label.toUpperCase()} <kbd>E</kbd></button></div></section>`}
+function refreshIntro(){if(!INTRO)return;const i=INTRO,s=INTRO_STEPS[i.stage];
+ wrap.classList.toggle('intro-narrating',i.card>=0||i.reading);
+ if(i.card>=0){const card=INTRO_CARDS[i.card];$('intro-ui').innerHTML=`<header hidden></header><section class='intro-title-card' aria-live='polite'><div><span class='eyebrow'>BLACKWOOD MINE · YOUR STORY</span><h1>${esc(card.title)}</h1><p>${esc(card.line)}</p><button data-intro='act'>${i.paused?'RESUME':i.card===0?'CONTINUE':'ENTER THE STAGING SHED'} <kbd>↵</kbd></button><small>Click / tap to continue · Enter or E</small></div></section>`;return}
+$('intro-ui').innerHTML=`<header><div><span class='eyebrow'>PROLOGUE · ${i.stage+1} / 5</span><strong>${esc(s.title)}</strong></div>${i.replay?"<button data-intro='skip'>EXIT REPLAY</button>":"<small>FOLLOW THE GOLD MARKER</small>"}</header><section class='intro-caption' aria-live='polite'><p>${esc(i.transition?s.after:i.reading?s.after:s.line)}</p><div><small id='intro-directions'>${i.paused?'Paused while away.':i.transition?'The cage is descending…':i.reading?'Take a moment, then continue.':introDirections()}</small><button data-intro='act' ${!i.paused&&(i.transition||!i.reading&&!introNear())?'disabled':''}>${i.paused?'RESUME':i.reading?'CONTINUE':s.label.toUpperCase()} <kbd>E</kbd></button></div></section>`}
 function interactIntro(){
  const i=INTRO;if(state!=='intro'||!i)return;if(i.paused){i.paused=false;clearInputs();refreshIntro();return}if(i.transition)return;
+ if(i.card>=0){AU.init();AU.nz(.3,{ft:'lowpass',f:700,v:.025});AU.tone(i.card===0?110:82,.7,{type:'triangle',v:.025,f2:55});i.card++;if(i.card>=INTRO_CARDS.length)i.card=-1;clearInputs();refreshIntro();return}
  if(i.reading){i.reading=false;i.stage++;clearInputs();refreshIntro();return}if(!introNear())return;
  clearInputs();i.vx=i.vy=0;i.moving=false;i.actionTime=.55;i.done[i.stage]=true;
  if(!i.replay){S.exp.flags['intro_'+INTRO_STEPS[i.stage].id]=1;if(i.stage===1)addJournal('inheritance');save()}
  if(i.stage===0){AU.nz(.18,{ft:'highpass',f:2400,v:.1});AU.tone(180,.2,{v:.04,f2:70})}
+ else if(i.stage===1){AU.nz(.25,{ft:'highpass',f:1200,v:.04})}
  else if(i.stage===2){AU.tone(46,1.4,{type:'sawtooth',v:.035,lp:140,f2:58});AU.nz(.5,{f:160,v:.09})}
  else if(i.stage===3){for(let n=0;n<3;n++)AU.tone(650,.06,{type:'triangle',v:.045,dl:n*.24})}
  else SND.ui();
@@ -32,14 +43,14 @@ function interactIntro(){
  refreshIntro();
 }
 function finishIntro(descend){
- if(!INTRO)return;const replay=INTRO.replay;INTRO=null;clearInputs();$('intro-ui').innerHTML='';wrap.classList.remove('in-intro');
+ if(!INTRO||!INTRO.replay&&(!descend||!INTRO.done.every(Boolean)))return;const replay=INTRO.replay;INTRO=null;clearInputs();$('intro-ui').innerHTML='';wrap.classList.remove('in-intro','intro-narrating');
  if(replay){showMenu();resize();return}
  S.exp.flags.intro_done=1;S.exp.flags.briefed=1;S.exp.flags.arrival=1;addJournal('arrival');S.exp.visited.marrow=1;S.exp.visited.board=1;S.exp.visited.lift=1;S.exp.protected.copper=1;S.exp.protected.coal=1;save();
  if(descend){S.act=0;S.startL=0;S.exp.contract='relay';startRun(0,0);resize()}else enterCamp();
 }
 function updateIntro(dt){const i=INTRO;if(!i||i.paused)return;i.t+=dt;i.sound-=dt;if(i.sound<=0){i.sound=1.8;AU.nz(1.6,{ft:'lowpass',f:900,v:.014,rev:.05});if(i.done[2])AU.tone(52,1.5,{type:'triangle',v:.018,lp:130,rev:0})}
  if(i.transition){i.transition+=dt;if(i.transition>=3.6)finishIntro(true);return}
- i.actionTime=Math.max(0,i.actionTime-dt);if(i.reading)return;
+ i.actionTime=Math.max(0,i.actionTime-dt);if(i.reading||i.card>=0)return;
  const before=introNear(),mx=(K.d||K.arrowright?1:0)-(K.a||K.arrowleft?1:0),my=(K.s||K.arrowdown?1:0)-(K.w||K.arrowup?1:0),len=Math.hypot(mx,my)||1,f=1-Math.exp(-dt*14),ox=i.x,oy=i.y;
  i.vx+=(mx/len*64-i.vx)*f;i.vy+=(my/len*64-i.vy)*f;
  if(!introBlocked(i.x+i.vx*dt,i.y))i.x+=i.vx*dt;if(!introBlocked(i.x,i.y+i.vy*dt))i.y+=i.vy*dt;
@@ -48,6 +59,7 @@ function updateIntro(dt){const i=INTRO;if(!i||i.paused)return;i.t+=dt;i.sound-=d
 }
 function renderIntro(){
  const i=INTRO;if(!i)return;cx.setTransform(1,0,0,1,0,0);cx.globalAlpha=1;cx.imageSmoothingEnabled=false;cx.fillStyle='#0c1216';cx.fillRect(0,0,cv.width,cv.height);fx.clearRect(0,0,fxc.width,fxc.height);
+ if(i.card>=0)return;
  const scale=innerWidth/cv.width,header=$('intro-ui').querySelector('header').offsetHeight/scale,footer=innerWidth<700?115:65;
  const camx=cv.width>390?196:clamp(i.x,cv.width/2,392-cv.width/2),camy=clamp(i.y,125,154),tx=Math.round(cv.width/2-camx),ty=Math.round((cv.height+header-footer)/2-camy);
  cx.save();cx.translate(tx,ty);const t=S.set.reduced?0:i.t;
@@ -83,6 +95,6 @@ function renderIntro(){
 function setupIntroUI(){
  $('intro-ui').addEventListener('click',e=>{const b=e.target.closest('[data-intro]');if(!b||b.disabled)return;if(b.dataset.intro==='skip')finishIntro(false);else interactIntro()});
  $('b-intro').addEventListener('click',()=>beginIntro(true));
- addEventListener('keydown',e=>{if(state!=='intro'||e.repeat||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;if(e.key==='Escape'){INTRO.paused=!INTRO.paused;clearInputs();refreshIntro();e.preventDefault()}else if(e.key.toLowerCase()==='e'||e.key===' '&&e.target.tagName!=='BUTTON'){e.preventDefault();interactIntro()}});
+ addEventListener('keydown',e=>{if(state!=='intro'||e.repeat||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;if(e.key==='Escape'){INTRO.paused=!INTRO.paused;clearInputs();refreshIntro();e.preventDefault()}else if(e.key.toLowerCase()==='e'||(e.key===' '||e.key==='Enter')&&e.target.tagName!=='BUTTON'){e.preventDefault();interactIntro()}});
  addEventListener('blur',()=>{if(state==='intro'&&INTRO){INTRO.paused=true;clearInputs();refreshIntro()}});
 }

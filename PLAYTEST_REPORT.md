@@ -116,3 +116,7 @@ Player-facing assessment: the camp reads as a worn mining outpost instead of a r
 - An inspection found that the paused cage sequence initially blocked its Resume button; it was fixed and covered by the final prologue test. Syntax and patch whitespace pass. CodeRabbit review remains disabled by task configuration.
 
 The prologue uses lamp oil and backpack limits as the expedition constraints. Its generator powers the arrival animation; it does not imply an unimplemented fuel or oxygen countdown. The protagonist’s inherited claim and grandfather’s journal now lead into Iona and Marrow’s existing campaign.
+
+## Mandatory guided prologue follow-up
+
+First-play Skip is removed, superseding the optional-skip behavior reported above. A fresh isolated browser origin booted directly to “Forty years after…”. Two real button clicks progressed through the opening cards to the guided staging shed. At 390×844, text and controls fit without horizontal overflow. The browser harness passed 42 assertions including blocked movement during cards, skip prevention, all five actions, pause, saved-step recovery and replay isolation. Walking took 13.47 simulated seconds; existing scene text estimates 69 seconds of reading, plus the two short opening cards. This supports a roughly 1–2 minute target, not a measured first-time human completion. Browser errors were empty. Syntax and whitespace checks passed. CodeRabbit review was unavailable because it is disabled for this task.

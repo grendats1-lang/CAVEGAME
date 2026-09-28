@@ -4,6 +4,7 @@
  const walkTo=(x,y)=>{let count=0;while(Math.hypot(INTRO.x-x,INTRO.y-y)>3&&count++<900){K.d=INTRO.x<x-1;K.a=INTRO.x>x+1;K.s=INTRO.y<y-1;K.w=INTRO.y>y+1;step(1/60)}clearInputs();if(count>=900)throw Error('Intro route stuck');return count/60};
  try{
   storageLocked=true;S=defSave();enterCamp();check('fresh player enters playable arrival',state==='intro'&&INTRO.stage===0&&!P);await tick();
+  check('opening starts with narrative card',INTRO.card===0);K.d=true;const openingX=INTRO.x;step(.1);check('opening blocks movement',INTRO.x===openingX);clearInputs();finishIntro(false);check('mandatory intro cannot be skipped',state==='intro'&&!S.exp.flags.intro_done);interactIntro();check('first click reveals second card',INTRO.card===1);interactIntro();check('second click reveals guided scene',INTRO.card===-1);check('no first-play skip button',!document.querySelector('[data-intro=skip]'));
   const runStart=S.stats.runs;interactIntro();check('interaction requires proximity',INTRO.stage===0&&!INTRO.done[0]);
   let seconds=0;for(let stage=0;stage<5;stage++){
    const target=INTRO_STEPS[stage];
@@ -17,11 +18,11 @@
   check('intro completes and journal survives',S.exp.flags.intro_done&&S.exp.flags.briefed&&S.exp.journal.includes('inheritance'));
   check('playable route is comfortably under five minutes',seconds+3.6<90);
   endRun(false);enterCamp('death');check('death returns to normal camp',state==='surface'&&!INTRO);
-  const saved=JSON.stringify(S);beginIntro(true);INTRO.x=98;INTRO.y=181;interactIntro();finishIntro(false);check('replay does not change character or checkpoints',JSON.stringify(S)===saved&&state==='menu');
+  const saved=JSON.stringify(S);beginIntro(true);interactIntro();interactIntro();INTRO.x=98;INTRO.y=181;interactIntro();finishIntro(false);check('replay does not change character or checkpoints',JSON.stringify(S)===saved&&state==='menu');
   S=defSave();S.exp.flags.intro_heater=1;S.exp.flags.intro_journal=1;S.exp.journal=['inheritance'];applySaveData(JSON.parse(JSON.stringify(S)));beginIntro(false);check('reload and migration resume next intro beat',INTRO.stage===2&&INTRO.done[0]&&INTRO.done[1]);
   window.dispatchEvent(new Event('blur'));check('focus loss pauses and releases input',INTRO.paused&&!K.d);document.querySelector('[data-intro="act"]').click();check('touch/click resumes intro',!INTRO.paused);
-  finishIntro(false);check('skip gives context and returns to camp',state==='surface'&&S.exp.flags.briefed&&S.exp.flags.intro_done&&S.stats.runs===0);
-  enterCamp();check('intro never repeats automatically',state==='surface');
+  finishIntro(false);check('resumed intro cannot be skipped',state==='intro'&&!S.exp.flags.intro_done);
+  S.exp.flags.intro_done=1;enterCamp();check('completed intro never repeats automatically',state==='surface');
   S=defSave();S.money=250;enterCamp();check('established older character avoids automatic prologue',state==='surface');if(dialogue)closeStory();
   const a=minerFrame({action:'idle',dir:'down',frame:0}),d=a.getContext('2d').getImageData(0,0,32,36).data,ys=[];for(let y=0;y<36;y++)for(let x=0;x<32;x++)if(d[(y*32+x)*4+3])ys.push(y);check('miner is shorter without scaling or cropping',Math.max(...ys)-Math.min(...ys)+1<=24&&Math.max(...ys)>=31);
   check('diagonal direction is stable',minerDirection(50,50.01,'right')==='right'&&minerDirection(50.01,50,'down')==='down');

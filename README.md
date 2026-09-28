@@ -14,9 +14,9 @@ Visit `http://localhost:8000`. There is no installation or build step. All scrip
 
 ## Your first chapter
 
-You inherited your grandfather’s journal and spent ten years buying back Blackwood Mine. A new character begins in a rain-soaked staging shed: walk to the heater, read the journal, start the generator, answer Marrow’s radio and lower the cage. The five-step prologue is designed for roughly 1–2 minutes, has no forced reading delays, and can be skipped to camp at any time. Completed steps survive reload; **Play Prologue** on the menu replays it without changing your character or saved expedition.
+You inherited your grandfather’s journal and spent ten years buying back Blackwood Mine. A new character opens directly on fading, click-through story cards, then enters a rain-soaked staging shed: walk to the heater, read the journal, start the generator, answer Marrow’s radio and lower the cage. The five-step prologue is designed for roughly 1–2 minutes, has no forced reading delays, and is required on first play. Gold markers and movement/action prompts guide every step; each scene has its own sound cue. Completed steps survive reload; **Play Prologue** on the menu replays it without changing your character or saved expedition.
 
-Marrow’s niece Iona followed the same sketch and has transmitted a signal from below. The prologue leads straight into **Iona’s Last Signal**. If you skip it, follow the gold trail through camp to the lift. Copper near the lift repairs her relay; taking its battery offers a more dangerous alternative. Follow the cyan marker, read the signal, and return to a lift. Your first successful return restores the Archive and pays enough for an early tool or camp project.
+Marrow’s niece Iona followed the same sketch and has transmitted a signal from below. The prologue leads straight into **Iona’s Last Signal**. Copper near the lift repairs her relay; taking its battery offers a more dangerous alternative. Follow the cyan marker, read the signal, and return to a lift. Your first successful return restores the Archive and pays enough for an early tool or camp project.
 
 The initial oil supply is six minutes, plus loadout/project bonuses. A direct route is deliberately short; detours offer rescue, resource and story choices. Oil, backpack space and health make continued exploration a decision.
 

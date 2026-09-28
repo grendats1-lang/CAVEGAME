@@ -140,7 +140,7 @@ $('ngbox').addEventListener('click',e=>{const m=e.target.closest('[data-mod]');i
 // ---------- info screens ----------
 let infoBack='menu';
 function showInfo(h,back){infoBack=back;$('info').innerHTML=`<button id='b-info-close' class='info-close'>BACK</button>`+h+`<div class='c sec'><button id='b-back'>BACK</button></div>`;showPanel('info')}
-const HOW=`<h2>HOW TO PLAY</h2><p><b>Your first trip:</b> Play the short arrival scene, or skip to camp and follow the gold trail to the lift. Below, mine two copper and follow blue lamps to Iona’s relay. Return to the starting lift and press E to bank your haul. You do not need to reach the bottom.</p><p>In camp, <b>GUIDE / ?</b> explains your next step. <b>PLACES / C</b> shows every building symbol and can mark a walking route.</p><div class='list'>
+const HOW=`<h2>HOW TO PLAY</h2><p><b>Your first trip:</b> Follow the guided arrival scene and follow the gold trail to the lift. Below, mine two copper and follow blue lamps to Iona’s relay. Return to the starting lift and press E to bank your haul. You do not need to reach the bottom.</p><p>In camp, <b>GUIDE / ?</b> explains your next step. <b>PLACES / C</b> shows every building symbol and can mark a walking route.</p><div class='list'>
 <p><b class='gold'>The loop.</b> Descend, mine, fight, and get back to a lift before your lamp dies. Ore goes into your <b>stash</b>: forge gear with it or sell it at the Market.</p>
 <p class='sec'><b class='gold'>The risk.</b> Die and your backpack is lost. Deeper layers pay a cash depth bonus but hit much harder.</p>
 <p class='sec'><b class='gold'>Gear.</b> Forge pickaxes (they break layer seals), swords, ranged weapons and armor. Old Marrow gives quests with rewards.</p>
@@ -203,4 +203,4 @@ function frame(now){let dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;TT
 
 // ---------- boot ----------
 setupExpansionUI();setupIntroUI();load();setInterval(()=>{if((state==='run'||state==='surface')&&save())toast('AUTOSAVED','autosave')},60000);setAct(0);genWorld(4242);{const l=lifts[0];cam.x=(l.x+1)*TS;cam.y=(l.y+6)*TS;A.x=cam.x;A.y=cam.y}
-if(matchMedia('(prefers-reduced-motion: reduce)').matches){S.set.reduced=1;S.set.shake=0}showMenu();if(storageWarning)toast(esc(storageWarning));MUS.mode='menu';requestAnimationFrame(frame);
+if(matchMedia('(prefers-reduced-motion: reduce)').matches){S.set.reduced=1;S.set.shake=0}if(!storageLocked&&needsIntro())beginIntro(false);else{showMenu();MUS.mode='menu'}if(storageWarning)toast(esc(storageWarning));requestAnimationFrame(frame);
