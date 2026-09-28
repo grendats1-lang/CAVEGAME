@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>DEEP BELOW</title>
+<link rel='stylesheet' href='style.css'>
+</head>
+<body>
+<div id='wrap'>
+<canvas id='game'></canvas>
+<canvas id='fx'></canvas>
+<div id='hud'>
+ <div id='bars'>
+  <div class='bar'><span>HP</span><div class='bg'><div class='fill' id='hpf'></div></div><b id='hpt'></b></div>
+  <div class='bar'><span>OIL</span><div class='bg'><div class='fill' id='oilf'></div></div><b id='oilt'></b></div>
+  <div id='depth'></div>
+  <div id='warn'></div>
+ </div>
+ <canvas id='mini' width='144' height='120'></canvas>
+ <div id='pack'></div>
+ <div id='tools'></div>
+ <div id='hotbar'></div>
+ <div id='bossbar'><div id='bossn'></div><div class='bg'><div class='fill' id='bossf'></div></div></div>
+ <div id='wheel'></div>
+ <div id='msg'></div>
+ <div id='prompt'></div>
+ <div id='hint'></div>
+</div>
+<div id='touch-controls' aria-label='Touch controls'>
+ <div class='touch-pad'>
+  <button data-touch-key='w' class='touch-up' aria-label='Move up'>^</button>
+  <button data-touch-key='a' class='touch-left' aria-label='Move left'>&lt;</button>
+  <button data-touch-key='s' class='touch-down' aria-label='Move down'>v</button>
+  <button data-touch-key='d' class='touch-right' aria-label='Move right'>&gt;</button>
+ </div>
+ <div class='touch-actions'>
+  <button data-touch-hold='use'>USE</button>
+  <button data-touch-hold='mine'>MINE</button>
+  <button data-touch-action='tonic'>TONIC</button>
+  <button data-touch-action='flare'>FLARE</button>
+  <button data-touch-action='scan'>SCAN</button>
+  <button data-touch-action='rope'>ROPE</button>
+  <button data-touch-action='pause'>PAUSE</button>
+ </div>
+</div>
+<div id='toasts'></div>
+<div class='panel' id='p-menu'><div class='menu'>
+ <h1>DEEP BELOW</h1><div class='sub'>HOW DEEP DARE YOU DIG?</div>
+ <button id='b-play'>DESCEND</button>
+ <button id='b-ngp'>NEW GAME+</button>
+ <button id='b-how'>HOW TO PLAY</button>
+ <button id='b-ach'>ACHIEVEMENTS</button>
+ <button id='b-stats'>STATISTICS</button>
+ <button id='b-set'>SETTINGS</button>
+ <button id='b-save'>SAVE GAME</button>
+ <button id='b-load'>LOAD GAME</button>
+ <input id='save-file' type='file' accept='.json,application/json' style='display:none'>
+ <div class='foot'>WASD move &middot; LMB use item &middot; RMB mine &middot; 1-6 / wheel / hold TAB to switch</div>
+</div></div>
+<div class='panel' id='p-surface'><div class='box wide' id='surf'></div></div>
+<div class='panel' id='p-results'><div class='box' id='res'></div></div>
+<div class='panel' id='p-pause'><div class='box menu'>
+ <h2 class='c'>PAUSED</h2>
+ <button id='b-resume'>RESUME</button>
+ <button id='b-pset'>SETTINGS</button>
+ <button id='b-phow'>HOW TO PLAY</button>
+ <button id='b-abandon'>ABANDON RUN</button>
+</div></div>
+<div class='panel' id='p-confirm'><div class='box' id='confirmbox'></div></div>
+<div class='panel' id='p-info'><div class='box' id='info'></div></div>
+<div class='panel' id='p-victory'><div class='box' id='vic'></div></div>
+<div class='panel' id='p-ng'><div class='box' id='ngbox'></div></div>
+</div>
+<script src='js/core.js'></script>
+<script src='js/icons.js'></script>
+<script src='js/world.js'></script>
+<script src='js/game.js'></script>
+<script src='js/enemies.js'></script>
+<script src='js/render.js'></script>
+<script src='js/ui.js'></script>
+</body>
+</html>
