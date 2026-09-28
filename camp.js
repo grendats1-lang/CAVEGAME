@@ -38,43 +38,73 @@ function updateCampGuide(){
  if(key===campGuideKey)return;campGuideKey=key;
  $('camp-guide').innerHTML=`${stationIcon(id)}<div><span class='eyebrow'>${CAMP.destination?'YOUR DESTINATION':'NEXT STEP'}</span><strong>${esc(CAMP.destination?s.n:n.title)}</strong><p>${near?'You’re here. Press E or tap the prompt.':`Follow the gold trail to ${esc(s.n)}.`}</p></div><button data-exp='guide' aria-label='Open the step-by-step guide'>?</button>`;
 }
-// Recompute only after a destination changes or the player leaves the old route.
-// Eight-unit nodes include the player's collision boundary, so a trail never crosses a cabin.
+// Cache a destination's distance field, then trace only the route ahead of the player.
 function campRoute(id){
- const s=hubStations().find(s=>s.id===id),step=8,W=80,H=45,start=Math.round(CAMP.y/step)*W+Math.round(CAMP.x/step),goal=Math.round((s.y+19)/step)*W+Math.round(s.x/step);
- if(CAMP.route?.id===id&&CAMP.route.points.some(p=>Math.hypot(p.x-CAMP.x,p.y-CAMP.y)<15))return CAMP.route.points;
- const prev=new Int32Array(W*H).fill(-1),q=[start];prev[start]=start;
- for(let i=0;i<q.length&&prev[goal]<0;i++){const a=q[i],x=a%W,y=Math.floor(a/W);for(const [dx,dy] of D4){const X=x+dx,Y=y+dy,b=Y*W+X;if(X<0||X>=W||Y<0||Y>=H||prev[b]>=0||hubBlocked(X*step,Y*step))continue;prev[b]=a;q.push(b)}}
- const points=[];if(prev[goal]>=0)for(let p=goal;p!==start;p=prev[p])points.push({x:p%W*step,y:Math.floor(p/W)*step});points.reverse();CAMP.route={id,points};return points;
+ const stations=hubStations(),s=stations.find(s=>s.id===id);if(!s)return [];
+ const step=8,W=80,H=45,goal=Math.round((s.y+19)/step)*W+Math.round(s.x/step);
+ const clear=(ax,ay,bx,by)=>{const n=Math.max(1,Math.ceil(Math.hypot(bx-ax,by-ay)/2));for(let i=0;i<=n;i++)if(hubBlocked(ax+(bx-ax)*i/n,ay+(by-ay)*i/n,stations))return false;return true};
+ if(Math.hypot(CAMP.x-s.x,CAMP.y-s.y-19)<28&&clear(CAMP.x,CAMP.y,s.x,s.y+19))return [];
+ if(CAMP.route?.id!==id){
+  const next=new Int32Array(W*H).fill(-1),q=[goal];next[goal]=goal;
+  for(let i=0;i<q.length;i++){const a=q[i],x=a%W,y=Math.floor(a/W);for(const [dx,dy] of D4){const X=x+dx,Y=y+dy,b=Y*W+X;if(X<0||X>=W||Y<0||Y>=H||next[b]>=0||!clear(x*step,y*step,X*step,Y*step))continue;next[b]=a;q.push(b)}}
+  CAMP.route={id,next,start:-1,points:[]};
+ }
+ const r=CAMP.route,X=Math.round(CAMP.x/step),Y=Math.round(CAMP.y/step);let start=-1,distance=Infinity;
+ // A rounded node can be inside a trunk or across a corner. Connect to a visible, free node.
+ for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const x=X+dx,y=Y+dy,n=y*W+x,d=Math.hypot(x*step-CAMP.x,y*step-CAMP.y);if(x<0||x>=W||y<0||y>=H||r.next[n]<0||d>=distance||!clear(CAMP.x,CAMP.y,x*step,y*step))continue;start=n;distance=d}
+ if(start<0)return [];
+ if(r.start!==start){const points=[];for(let p=start;;p=r.next[p]){points.push({x:p%W*step,y:Math.floor(p/W)*step});if(p===goal)break}r.start=start;r.points=points}
+ return r.points;
 }
 let campTerrain=null;
-function buildCampTerrain(){
+// The arrival and established camp occupy the same clearing, with the same old haul road.
+const CAMP_TREES=[
+ [18,62,3],[52,44,8],[128,39,2],[222,51,6],[333,44,4],[456,39,9],[596,60,5],[626,89,3],
+ [22,133,5],[13,172,3],[18,258,2],[9,311,6],[616,151,4],[629,226,6],[607,331,2],
+ [102,356,6],[130,370,2],[230,367,3],[351,365,8],[474,367,3],[583,372,5],
+ [243,118,2],[332,151,3],[435,232,5],[240,276,4],[112,242,3],[563,169,6]
+];
+function campTreeBlocked(x,y){return CAMP_TREES.some(([tx,ty])=>Math.abs(x-tx)<6&&Math.abs(y-ty)<5)}
+function groundNoise(x,y,scale,seed){
+ const X=Math.floor(x/scale),Y=Math.floor(y/scale),u=x/scale-X,v=y/scale-Y,a=u*u*(3-2*u),b=v*v*(3-2*v);
+ return (ih(X,Y,seed)*(1-a)+ih(X+1,Y,seed)*a)*(1-b)+(ih(X,Y+1,seed)*(1-a)+ih(X+1,Y+1,seed)*a)*b;
+}
+function buildCampGround(early=false){
  const c=document.createElement('canvas');c.width=640;c.height=360;const g=c.getContext('2d');
- const road=new Uint8Array(640*360),r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h)};
- r(0,0,640,360,'#17201f');
- // A clearing and footpaths worn between actual destinations, rather than bordered plots.
- for(const station of hubStations()){
-  const ox=CAMP.x,oy=CAMP.y,old=CAMP.route;CAMP.x=320;CAMP.y=224;CAMP.route=null;const path=campRoute(station.id);CAMP.x=ox;CAMP.y=oy;CAMP.route=old;
-  for(const p of path)for(let yy=-9;yy<=9;yy++)for(let xx=-10;xx<=10;xx++){const x=p.x+xx,y=p.y+yy;if(x<0||x>=640||y<0||y>=360)continue;if(xx*xx+yy*yy<45+ih(x,y,54)*45)road[y*640+x]=1}
+ const mask=document.createElement('canvas');mask.width=640;mask.height=360;const m=mask.getContext('2d');m.lineCap='round';m.lineJoin='round';
+ const paths=[[[0,255],[82,250],[164,218],[266,234],[365,227],[460,262],[534,304]],[[164,218],[174,204],[175,184]],[[365,227],[366,213],[365,203]],[[482,277],[494,267],[494,250]]];
+ if(!early)paths.push([[83,250],[66,217],[76,204]],[[174,218],[127,145],[76,105]],[[128,145],[179,121]],[[267,234],[279,183]],[[279,183],[293,131],[285,94]],[[333,224],[372,161],[395,125]],[[436,255],[481,213]],[[480,214],[555,139],[518,94]],[[83,250],[62,304]],[[174,219],[187,259],[177,303]],[[266,234],[286,269],[290,323]],[[403,242],[409,299]]);
+ for(const points of paths){
+  m.beginPath();m.moveTo(...points[0]);for(let k=1;k<points.length-1;k++){const p=points[k],q=points[k+1];m.quadraticCurveTo(p[0],p[1],(p[0]+q[0])/2,(p[1]+q[1])/2)}m.lineTo(...points[points.length-1]);
+  for(let w=30;w>=14;w-=4){m.lineWidth=w;m.strokeStyle=`rgba(255,255,255,${w===14?.6:.12})`;m.stroke()}
  }
+ for(const [x,y,rx,ry] of [[365,215,36,24],[167,188,40,25],[530,288,33,22]]){for(let edge=0;edge<6;edge++){m.fillStyle='#ffffff16';m.beginPath();m.ellipse(x,y,rx-edge*3,ry-edge*2,0,0,Math.PI*2);m.fill()}}
+ const worn=m.getImageData(0,0,640,360).data,out=g.createImageData(640,360);
  for(let y=0;y<360;y++)for(let x=0;x<640;x++){
-  const h=ih(x>>2,y>>2,33),d=((x-343)/71)**2+((y-222)/30)**2;
-  if(road[y*640+x]||d<1+ih(x,y,4)*.1){road[y*640+x]=1;r(x,y,1,1,h>.8?'#474335':h>.35?'#403d31':'#38392f')}
-  else if(h>.74)r(x,y,1,1,'#202c27');
+  const k=(y*640+x)*4,n=groundNoise(x,y,38,71),fine=groundNoise(x,y,7,72),wear=clamp(worn[k+3]/255+(fine-.5)*.28,0,1),light=1+(Math.floor(n*5)/4-.5)*.22;
+  // Moss gives way to compacted soil through broken, low-contrast edges; no outline.
+  const grain=ih(x>>1,y>>1,79),blend=Math.floor(clamp(wear+(grain-.5)*.16,0,1)*5)/5,grass=[34,46,32],soil=[78,69,48];for(let j=0;j<3;j++)out.data[k+j]=Math.round((grass[j]*(1-blend)+soil[j]*blend)*light);out.data[k+3]=255;
  }
- for(let i=0;i<2100;i++){
-  const x=Math.floor(ih(i,2,9)*640),y=Math.floor(ih(i,3,9)*360);
-  if(road[y*640+x]){if(i%4===0){r(x,y,2,1,'#605b46');r(x,y+1,3,1,'#2b3029')}}
-  else {r(x,y,1,2,'#374536');if(i%3===0){r(x-1,y+1,3,1,'#303e30');r(x+1,y-1,1,1,'#48503a')}}
+ g.putImageData(out,0,0);
+ // Small clusters of blades, soil clods and chipped stones sit on crisp source pixels.
+ for(let n=0;n<1800;n++){const x=Math.floor(ih(n,1,44)*640),y=Math.floor(ih(n,2,44)*360),k=(y*640+x)*4,patch=groundNoise(x,y,28,71);
+  if(worn[k+3]>110){
+   g.fillStyle=n%3?'#62543b':'#8a7855';g.fillRect(x,y,2+n%3,1);if(n%7===0){g.fillStyle='#333a2a';g.fillRect(x+1,y+1,3,1);g.fillStyle='#a08d64';g.fillRect(x,y-1,2,1)}
+  }else if(patch>.35){
+   g.fillStyle=n%2?'#445835':'#2b3d2a';g.fillRect(x,y,1,2+n%3);g.fillRect(x-2,y+2,1,2);g.fillRect(x+2,y+1,1,2);if(n%4===0){g.fillStyle='#657447';g.fillRect(x,y,1,1);g.fillRect(x+2,y+1,1,1)}
+   if(n%11===0){g.fillStyle='#736448';g.fillRect(x-3,y+4,3,1)}
+  }
  }
- // Old rails, sleepers and puddles run past the supply shed into the shaft.
- for(let x=405;x<589;x+=9){r(x,318,3,15,'#302d27');r(x,319,3,1,'#62533b')}
- for(const y of [321,328]){r(403,y,190,1,'#727164');r(403,y+1,190,1,'#252e2d')}
- for(const [x,y,w] of [[107,254,22],[215,134,16],[472,304,19],[329,115,14]]){r(x,y,w,4,'#111e20');r(x+3,y-2,w-7,7,'#18272b');r(x+5,y,w-10,1,'#42534f')}
- // Ragged cliff edge. Openings remain available along the entire walkable boundary.
- for(let i=0;i<72;i++){const x=i*9,h=5+Math.floor(ih(i,7,6)*13);r(x,26-h,12,h,'#0f171a');r(x,26-h,12,1,'#43483d');r(x,27,10,5,'#202927')}
+ // A short surviving rail spur terminates at the cage, rather than crossing the clearing.
+ for(let y=303;y<346;y+=8){g.fillStyle='#3a3428';g.fillRect(522,y,27,3);g.fillStyle='#746345';g.fillRect(522,y,23,1)}
+ for(const x of [527,543]){g.fillStyle='#6f7568';g.fillRect(x,300,1,47);g.fillStyle='#16241f';g.fillRect(x+1,300,1,47)}
  return c;
 }
+function groundShadow(x,y,w,h){
+ cx.fillStyle='#09161450';cx.beginPath();cx.moveTo(x-w,y);cx.lineTo(x+w,y);cx.lineTo(x+w+14,y+h);cx.lineTo(x-w+9,y+h-2);cx.closePath();cx.fill();
+}
+function campTreeShadows(){for(const [x,y,seed] of CAMP_TREES){cx.fillStyle='#0a181345';cx.beginPath();for(const [dx,dy,rx,ry] of [[13,10,15,6],[23,16,16,7],[8,17,10,5]]){cx.moveTo(x+dx+rx,y+dy);cx.ellipse(x+dx,y+dy,rx,ry,0,0,Math.PI*2)}cx.fill();cx.strokeStyle='#0b191755';cx.lineWidth=3;cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+18,y+15);cx.stroke();cx.lineWidth=1}}
+function buildCampTerrain(){return buildCampGround(false)}
 function campCrate(x,y){cpx(x,y,9,8,'#27352c');cpx(x+.5,y,8,6,'#927a4b');cpx(x+1,y+1,7,1,'#b49b66');cpx(x+3,y,1,6,'#594b32');cpx(x+6,y,1,6,'#594b32');cpx(x,y+5,9,1,'#c0a974')}
 function campLamp(x,y,t){
  cpx(x-1,y-16,2,19,'#1b302c');cpx(x-2,y-17,6,1,'#9aa588');cpx(x+2,y-16,1,4,'#526a59');cpx(x+1,y-13,4,5,'#423d29');cpx(x+2,y-12,2,3,'#ffdc86');
@@ -89,14 +119,7 @@ function campBuilding(s,t){
  const x=s.x,y=s.y,built=!!S.exp.projects[s.id]||!PROJECTS.some(p=>p.id===s.id);
  cx.fillStyle='#0b201d65';cx.beginPath();cx.ellipse(x+4,y+6,37,10,0,0,Math.PI*2);cx.fill();
  if(campSpecialBuilding(s,t,built))return;
- if(s.id==='fire'){
-  for(let i=0;i<10;i++){const a=i/10*6.28;cpx(x+Math.cos(a)*13-2,y+Math.sin(a)*7,4,3,'#899180');cpx(x+Math.cos(a)*13-2,y+Math.sin(a)*7,3,1,'#bbc1a2')}
-  for(const f of [-1,1]){cx.save();cx.translate(x,y);cx.rotate(f*.35);cpx(-10,-1,20,3,'#8b613c');cpx(-8,-1,16,1,'#c2985a');cx.restore()}
-  for(let i=0;i<7;i++){const h=8+Math.sin(t*7+i*3)*3;cpx(x-6+i*2,y-h,2,h,['#da7536','#ffd18a','#f6a747'][i%3])}
-  for(let i=0;i<5;i++){const a=(t*6+i*6)%30;cpx(x+Math.sin(a+i)*4,y-10-a,.7,.7,'#ffe1a299')}
-  const g=cx.createRadialGradient(x,y,5,x,y,50);g.addColorStop(0,'#ffb34824');g.addColorStop(1,'#ffb34800');cx.fillStyle=g;cx.fillRect(x-50,y-50,100,100);
-  for(const off of [-26,22]){cpx(x+off,y+9,6,13,'#182d28');cpx(x+off,y+7,5,12,'#95734c');cpx(x+off+1,y+7,1,12,'#c0a474')}return;
- }
+ if(s.id==='fire'){forestFire(x,y,t);for(const off of [-26,22]){cpx(x+off,y+9,6,13,'#493f2c');cpx(x+off,y+7,5,2,'#9a8151')}return}
  if(s.id==='board'){
   cpx(x-23,y-32,46,32,'#302f24');cpx(x-21,y-30,42,27,'#826843');cpx(x-20,y-29,40,1,'#b29967');
   for(let i=0;i<4;i++){cpx(x-17+i*9,y-25+i%2*3,7,16-i%2*3,'#e0d3a9');cpx(x-15+i*9,y-22+i%2*3,4,.6,'#857758');cpx(x-15+i*9,y-19+i%2*3,3,.6,'#9e8d65');cpx(x-14+i*9,y-26+i%2*3,1,2,'#b7613e')}
@@ -152,10 +175,10 @@ function renderCamp(){
  const prompt=$('interact');if(CAMP.near&&!CAMP.menu){const feet=((cv.height+(top-bottom)*scale)/2+(CAMP.y-CAMP.camera.y)*scale)/d,ph=prompt.offsetHeight,low=innerHeight-(innerWidth<700?125:100);prompt.style.top=Math.max($('campbar').offsetHeight+10,feet+ph+24<low?feet+24:feet-30*scale/d-ph-12)+'px';prompt.style.bottom='auto'}
  cx.save();cx.translate(Math.round(cv.width/2-CAMP.camera.x),Math.round((cv.height+(top-bottom)*scale)/2-CAMP.camera.y*scale));cx.scale(scale,scale);
  if(!campTerrain)campTerrain=buildCampTerrain();cx.drawImage(campTerrain,0,0,640,360);
- const t=S.set.reduced?0:TT;
+ const t=S.set.reduced?0:TT;campTreeShadows();for(const s of hubStations())if(s.id!=='fire')groundShadow(s.x,s.y+5,28,12);
  for(const [x,y] of [[128,114],[226,214],[442,214],[562,114],[338,304],[32,304]])campLamp(x,y,t);
  const id=CAMP.destination||campNextStep().id;
- if(!CAMP.menu){const route=campRoute(id);for(let i=0;i<route.length;i++){const p=route[i];if(Math.hypot(p.x-CAMP.x,p.y-CAMP.y)<12)continue;cpx(p.x-1,p.y-1,2,2,'#e8cc8288')}const s=hubStations().find(s=>s.id===id);cx.strokeStyle='#ffe2a0';cx.lineWidth=.7;cx.beginPath();cx.ellipse(s.x,s.y+20,10,4,0,0,6.29);cx.stroke()}
+ if(!CAMP.menu){const route=campRoute(id);for(let i=0;i<route.length;i++){const p=route[i];if(Math.hypot(p.x-CAMP.x,p.y-CAMP.y)<6)continue;cpx(p.x-1,p.y-1,2,2,'#e8cc8288')}const s=hubStations().find(s=>s.id===id);cx.strokeStyle='#ffe2a0';cx.lineWidth=.7;cx.beginPath();cx.ellipse(s.x,s.y+20,10,4,0,0,6.29);cx.stroke()}
  // Depth-sort roofs, people and foreground props together, including the player.
  const drawables=hubStations().map(s=>({y:s.y+7,draw:()=>campBuilding(s,t)}));campScenery(drawables,t);
  for(const s of hubStations()){
@@ -172,6 +195,7 @@ function renderCamp(){
  drawables.sort((a,b)=>a.y-b.y);for(const o of drawables)o.draw();
  // Warm lamp pools and sparse fireflies make the hub feel inhabited without obscuring paths.
  if(!S.set.reduced&&S.set.parts)for(let i=0;i<10;i++){const x=ih(i,2,80)*580+30+Math.sin(t*.3+i)*3,y=ih(i,4,80)*270+50;cpx(x,y, .6,.6,Math.sin(t+i)>0?'#dfdea48a':'#dfdea420')}
+ forestLeaves(t,640,360,5);
  cx.restore();fx.setTransform(1,0,0,1,0,0);fx.clearRect(0,0,fxc.width,fxc.height);
 }
 
@@ -181,12 +205,28 @@ function campCourier(t){
  return {x:310+Math.round(p*125),y:238,moving,frame:Math.floor(p*125/4)%8,dir:phase<16?'right':'left'};
 }
 function campTree(x,y,seed,t){
- const wind=S.set.reduced?0:Math.floor(Math.sin(t*.6+seed)*1.3);
- cpx(x-2,y-22,4,24,'#282b24');cpx(x-1,y-18,1,18,'#544838');
- for(let i=0;i<5;i++){const w=6+i*4,yy=y-51+i*7,off=(i%2?1:-1)*(seed%3)+wind;for(let j=0;j<6;j++){cpx(x-w+off+j,yy+j,w*2-j*2,2,i%2?'#172722':'#1d3028');if(j===3)cpx(x-w+off+3,yy+j,w-3,1,'#314333')}}
+ const wind=S.set.reduced?0:Math.round(Math.sin(t*.65+seed)*1.2),tall=seed%3*4;
+ const actor=state==='intro'?INTRO:state==='surface'?CAMP:null,behind=actor&&Math.abs(actor.x-x)<29&&actor.y<y&&actor.y>y-72;
+ cx.save();if(behind)cx.globalAlpha=.48;
+ for(let n=0;n<3;n++){const yy=y-19-n*7;for(let k=0;k<7;k++)cpx(x+(n%2?1:-1)*k,yy-k,2,2,'#5a4932')}
+ cpx(x-3,y-37-tall,6,39+tall,'#332c21');cpx(x-2,y-35,2,35,'#796044');cpx(x+2,y-29,1,29,'#1b281e');cpx(x-6,y-1,12,2,'#4c4730');
+ for(let n=0;n<7;n++)cpx(x-1+(n%2),y-3-n*4,1,2,n%2?'#a18555':'#423524');
+ if(seed%3===0){
+  for(let n=0;n<5;n++){const w=7+n*4,yy=y-62-tall+n*9,off=Math.round(wind*(5-n)/5);
+   for(let row=0;row<11;row++){const half=Math.min(w,3+row*2);cpx(x-half+off,yy+row,half*2,1,row>8?'#1c3026':'#2d4531');cpx(x-half+off,yy+row,Math.max(1,half-2),1,row>8?'#2f4530':'#4d603c')}
+   cpx(x-w+off+3,yy+8,w-3,1,'#657047');for(let k=0;k<6;k++){const dx=Math.floor(ih(k,n+seed,12)*w*2)-w;cpx(x+dx+off,yy+6+k%3,3,1,k%2?'#637844':'#1c3427');cpx(x+dx+off+1,yy+8+k%3,1,2,'#29402c')}
+  }
+ }else{
+  const lobes=[[-13,-42,17], [9,-39,20],[-4,-57-tall,19],[-18,-50,13],[14,-53,13]];
+  for(let n=0;n<lobes.length;n++){const [dx,dy,r]=lobes[n],xx=x+dx+wind,yy=y+dy;
+   for(let row=-r;row<=r;row+=2){const half=Math.floor(Math.sqrt(Math.max(0,r*r-row*row))*.95)-(Math.floor((row+r)/2)+seed+n)%3;if(!half)continue;cpx(xx-half,yy+row,half*2,2,row>r*.4?'#20382a':row<0?'#475d38':'#344c31');if(row<r*.25)cpx(xx-half+1,yy+row,Math.max(1,half-2),2,row<-r*.3?'#647246':'#53683e')}
+   for(let k=0;k<24;k++){const dx=Math.floor(ih(k,n+seed,22)*r*1.6)-r*.8,dy=Math.floor(ih(k,n+seed,23)*r*1.6)-r*.8;if(dx*dx+dy*dy>r*r*.65)continue;const bright=dy<-2&&dx<4;cpx(xx+dx,yy+dy,3,1,bright?'#75854f':'#29412b');cpx(xx+dx-1,yy+dy+1,2,1,bright?'#596f40':'#405737');if(k%4===0)cpx(xx+dx+2,yy+dy-1,1,1,'#899055')}
+  }
+ }
+ cx.restore();
 }
 function campScenery(drawables,t){
- for(const [x,y,seed] of [[12,142,1],[10,310,4],[626,178,2],[633,290,3],[113,35,5],[345,31,6],[590,37,7],[231,358,8],[590,364,9]])drawables.push({y,draw:()=>campTree(x,y,seed,t)});
+ for(const [x,y,seed] of CAMP_TREES)drawables.push({y,draw:()=>campTree(x,y,seed,t)});
  for(const p of CAMP_PROPS)drawables.push({y:p.y,draw:()=>{
   const {x,y}=p;
   if(p.id==='cart'){
@@ -229,4 +269,26 @@ function campSpecialBuilding(s,t,built){
   for(let i=0;i<9;i++){cpx(x-33+i*8,y-36+i%2,8,12,'#3d504e');cpx(x-32+i*8,y-36+i%2,1,11,'#718276')}cpx(x-34,y-25,71,2,'#8a8969');cpx(x-24,y-8,43,4,'#8c7851');cpx(x-23,y-4,2,13,'#5c583f');cpx(x+16,y-4,2,13,'#5c583f');for(let i=0;i<4;i++)cpx(x-19+i*8,y-12,5,4,['#9a8752','#7d8980','#5d6150','#8a5f40'][i]);campCrate(x+23,y+3);campSign(s,x-17,y-26);return true;
  }
  return false;
+}
+
+// Shared surface details use fixed counts and whole source pixels.
+function forestFire(x,y,t,lit=true){
+ cpx(x-16,y-4,32,11,'#17211b');
+ for(let n=0;n<11;n++){const a=n/11*6.283,xx=x+Math.cos(a)*14,yy=y+Math.sin(a)*7;cpx(xx-3,yy-2,6,4,'#596052');cpx(xx-2,yy-2,4,1,'#93947a')}
+ for(let n=0;n<3;n++){cpx(x-10+n*3,y-3+n*2,18,3,'#4b3627');cpx(x-10+n*3,y-3+n*2,3,2,'#ad8150');cpx(x-6+n*3,y-3+n*2,11,1,'#775339')}
+ if(!lit)return;
+ const frame=Math.floor(t*9)%8;
+ for(let n=0;n<5;n++){const xx=x-8+n*4,h=8+[3,7,5,11,6,9,4,8][(frame+n*3)%8],bend=Math.round(Math.sin(frame*.8+n)*2);for(let row=0;row<h;row+=2){const width=row<4?2:row<9?4:5,dx=Math.round(bend*(1-row/h));cpx(xx+dx,y-h+row,width,2,row<5?'#d76c30':'#f1a749');if(row>h/2)cpx(xx+dx+1,y-h+row,Math.max(1,width-2),2,'#f5ce74')}}
+ if(!S.set.reduced&&S.set.parts){
+  for(let n=0;n<7*S.set.parts;n++){const a=(t*10+n*7)%43;cpx(x+Math.sin(a*.18+n)*5+a*.17,y-8-a,1,1,a<22?'#e4b76b':'#846747')}
+  for(let n=0;n<5;n++){const a=(t*7+n*11)%55;cx.globalAlpha=(1-a/55)*.16;cpx(x-3+Math.sin(a*.1)*4+a*.2,y-16-a,6+Math.floor(a/8),3+Math.floor(a/12),'#b7b4a0')}cx.globalAlpha=1;
+ }
+ const r=48+Math.sin(t*4)*3,g=cx.createRadialGradient(x,y-3,3,x,y-3,r);g.addColorStop(0,'#f9b5572d');g.addColorStop(1,'#e9963200');cx.fillStyle=g;cx.fillRect(x-r,y-r,r*2,r*2);
+}
+function forestLeaves(t,w,h,seed=1){
+ if(S.set.reduced||!S.set.parts)return;
+ for(let n=0;n<26*S.set.parts;n++){
+  const phase=t*(5+ih(n,seed,1)*5)+ih(n,seed,2)*h,y=phase%h,x=(ih(n,seed,3)*w+t*3+Math.sin(phase*.045+n)*11)%w;
+  cpx(x,y,Math.sin(t*3+n)>.3?3:1,1,['#9a8454','#677e4c','#b1935c','#52654a'][n%4]);if(n%3===0)cpx(x+1,y+1,1,1,'#494e34');
+ }
 }

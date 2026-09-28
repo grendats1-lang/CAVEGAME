@@ -301,7 +301,7 @@ denied(){AU.tone(140,.12,{type:'square',v:.05})}};
 // ---------- music sequencer ----------
 const NOTE=n=>440*Math.pow(2,(n-69)/12);
 const MUS={mode:'menu',layer:0,act:0,t:0,s:0,int:0,
-bpm(){const m=this.mode;return m==='boss'?138:m==='camp'?92:m==='menu'?72:58+this.layer*5+this.act*6},
+bpm(){const m=this.mode;return m==='boss'?138:m==='camp'?64:m==='menu'?72:58+this.layer*5+this.act*6},
 update(dt){if(!AU.ctx)return;this.t-=dt;let g=0;while(this.t<=0&&g++<4){this.tick(this.s++);this.t+=60/this.bpm()/4}},
 kick(v){AU.tone(120,.28,{v:v||.3,f2:38,bus:'mus',rev:.1})},
 snare(v){AU.nz(.16,{f:1900,q:.7,v:v||.18,bus:'mus',rev:.3});AU.tone(190,.07,{type:'triangle',v:.05,bus:'mus',rev:0})},
@@ -312,8 +312,15 @@ pad(n,d,v){AU.tone(NOTE(n),d,{v,bus:'mus',rev:.9,at:d*.3});AU.tone(NOTE(n)*1.005
 bass(n,d,v){AU.tone(NOTE(n),d,{type:'sawtooth',v,bus:'mus',rev:.1,at:.005,lp:520})},
 tick(s){const m=this.mode,b=s%16,bar=Math.floor(s/16);
  if(m==='menu'){const ch=[[50,53,57,60,64],[46,50,53,57,62],[41,45,48,53,57],[48,52,55,60,64]][bar%4],st=[0,3,6,10,13];if(b===0){this.pad(ch[0],6,.035);this.pad(ch[2]+12,6,.02)}const i=st.indexOf(b);if(i>=0)this.pl(ch[i]+12,2.5,.04);if(b===0||b===10)this.kick(.07)}
- else if(m==='camp'){const ch=[[53,57,60,65],[48,52,55,60],[50,53,57,62],[46,50,53,58]][bar%4];if(b%2===0)this.pl(ch[(b/2)%4]+12,.9,.042);if(b===0||b===8)this.bass(ch[0]-12,.45,.05);if(b%4===2)this.hat(.025);if(b===4||b===12)AU.nz(.08,{f:3000,q:.5,v:.035,bus:'mus',rev:.1});
-  if(b===0&&bar%2===1){const mel=[72,74,77,79,81,84];for(let k=0;k<4;k++)AU.tone(NOTE(mel[ri(0,5)]),.5,{type:'sine',v:.03,dl:k*.33,bus:'mus',rev:.6})}}
+ else if(m==='camp'){
+  // An eight-bar folk motif leaves space for wind, radio and footsteps.
+  const ch=[[50,57,60,64],[50,55,60,62],[46,53,57,60],[48,55,58,62]][Math.floor(bar/2)%4];
+  if(b===0){this.pad(ch[0]-12,7,.018);this.pl(ch[0],2.8,.032,'triangle')}
+  if([3,8,11].includes(b))this.pl(ch[[3,8,11].indexOf(b)+1],2,.025,'triangle');
+  if(bar%2===0&&(b===6||b===14)){const melody=[69,67,64,62,65,64,62,57];this.pl(melody[(Math.floor(bar/2)*2+(b===14?1:0))%8],2.3,.019,'sine')}
+  if(b===0&&bar%2===0)AU.nz(4,{ft:'lowpass',f:700,f2:430,v:.016,at:1,bus:'sfx',rev:.1});
+  if(b===12&&bar%4===1)for(let k=0;k<2;k++)AU.tone(1350-k*170,.14,{type:'sine',v:.009,f2:1750-k*180,dl:k*.22,pan:.6,rev:.15});
+ }
  else if(m==='boss'){const r=(this.act?49:50)+[0,0,-2,-4][bar%4];if(b%4===0||b===14)this.kick(.32);if(b===4||b===12)this.snare(.2);if(b%2===1)this.hat(.035);const bl=[0,0,12,0,3,0,7,5];if(b%2===0){this.bass(r-12+bl[(b/2)%8],.2,.07);this.pl(r+12+[0,3,7,12,15,12,7,3][(b/2)%8],.22,.028,'square')}if(b===0&&bar%4===0)this.pad(r,4,.03)}
  else{const L=this.layer,A=this.act,root=(A===2?48:A?45:50)-L*2,sc=A===2?[0,2,5,7,9]:A?[0,1,4,5,7,8,10]:L<3?[0,3,5,7,10]:[0,1,3,6,7,10];
   if(s%32===0){this.pad(root-12,8,.03+L*.003);this.pad(root-12+sc[ri(1,sc.length-1)],8,.018)}

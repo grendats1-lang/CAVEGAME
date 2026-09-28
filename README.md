@@ -14,7 +14,7 @@ Visit `http://localhost:8000`. There is no installation or build step. All scrip
 
 ## Your first chapter
 
-You inherited your grandfather’s journal and spent ten years buying back Blackwood Mine. A new character opens directly on fading, click-through story cards, then enters a rain-soaked staging shed: walk to the heater, read the journal, start the generator, answer Marrow’s radio and lower the cage. The five-step prologue is designed for roughly 1–2 minutes, has no forced reading delays, and is required on first play. Gold markers and movement/action prompts guide every step; each scene has its own sound cue. Completed steps survive reload; **Play Prologue** on the menu replays it without changing your character or saved expedition.
+You inherited your grandfather’s journal and spent ten years buying back Blackwood Mine. A new character opens directly on fading, click-through story cards, then enters a wooded mountain clearing: walk to the campfire, read the journal, start the generator, answer Marrow’s radio and lower the cage. The five-step prologue is designed for roughly 1–2 minutes, has no forced reading delays, and is required on first play. Gold markers and movement/action prompts guide every step; each scene has its own sound cue. Completed steps survive reload; **Play Prologue** on the menu replays it without changing your character or saved expedition.
 
 Marrow’s niece Iona followed the same sketch and has transmitted a signal from below. The prologue leads straight into **Iona’s Last Signal**. Copper near the lift repairs her relay; taking its battery offers a more dangerous alternative. Follow the cyan marker, read the signal, and return to a lift. Your first successful return restores the Archive and pays enough for an early tool or camp project.
 
@@ -100,7 +100,7 @@ Master/music/effects volume, screen shake, particles, extra cave contrast and re
 - `sprites.js`: cached pixel frames, four directions, eight-frame walks, mining/melee, shooting, hurt, climbing and death poses.
 - `render.js`: player animation selection, lighting and effects.
 - `camp.js`: camp pixel art, scenery, resident routines, building symbols, guide and walking routes.
-- `intro.js`: playable Blackwood arrival, progress flags, replay isolation, rain and cage sequence.
+- `intro.js`: playable Blackwood arrival, progress flags, replay isolation, woodland ambience and cage sequence.
 - `expansion.js`: walkable hub, story/events, connected landmarks, contracts, Root mechanics/enemies, endings and checkpoints.
 - `ui.js`: panels, HUD, controls and frame loop.
 
@@ -126,3 +126,9 @@ See [PLAYTEST_REPORT.md](PLAYTEST_REPORT.md) for exact tested flows, timings, li
 The Old Mine has one optional landmark per layer, plus its guaranteed contract and first-chapter shelter. Later acts have two per layer plus authored story locations. Ordinary objects use worn wood, iron and muted amber; only the mission relay retains blue illumination. Mandatory objectives and their access paths remain guaranteed.
 
 Miner frames are about 12% shorter with unchanged collision boundaries. Walking advances every seven traveled pixels (previously four), uses stable diagonal facing and stops animating when blocked.
+
+Surface scenes share layered pixel trees, wind-driven canopies, drifting leaves and an eight-frame campfire with smoke, embers and warm light. The camp score uses a slow, eight-bar folk motif with room for wind and distant birds. Reduced motion stops environmental movement; particle settings reduce leaves, embers and smoke.
+
+The prologue now occupies the same 640×360 clearing as the home hub: Marrow’s shelter in the west, the central fire, and the southeastern mine. Later facilities fill the undeveloped ground. Both scenes share the old haul road and irregular tree groves; paths blend worn earth into grass without outlined borders, and tree trunks have collision.
+
+Ground uses crisp colour steps, grass tufts and soil chips; trees have bark, branching and broken leaf clusters. Camp guide dots trace from your current position, avoid blocked segments and clear on arrival.

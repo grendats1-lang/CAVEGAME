@@ -120,3 +120,27 @@ The prologue uses lamp oil and backpack limits as the expedition constraints. It
 ## Mandatory guided prologue follow-up
 
 First-play Skip is removed, superseding the optional-skip behavior reported above. A fresh isolated browser origin booted directly to “Forty years after…”. Two real button clicks progressed through the opening cards to the guided staging shed. At 390×844, text and controls fit without horizontal overflow. The browser harness passed 42 assertions including blocked movement during cards, skip prevention, all five actions, pause, saved-step recovery and replay isolation. Walking took 13.47 simulated seconds; existing scene text estimates 69 seconds of reading, plus the two short opening cards. This supports a roughly 1–2 minute target, not a measured first-time human completion. Browser errors were empty. Syntax and whitespace checks passed. CodeRabbit review was unavailable because it is disabled for this task.
+
+## Forest clearing presentation pass
+
+Replaced the prologue shed with a woodland clearing, curved trails, bedroll shelter, table, woodpile, stream edge and timber mine entrance. Camp and prologue share wind-driven trees, falling leaves and frame-based flames, embers, smoke and warm light. Camp music now follows a slower eight-bar folk motif; underground air carries sparse biome-tinted motes under the lighting pass.
+
+- Browser intro harness: **42 passed**, including every guided action, route reachability, completion, pause, resume and save compatibility.
+- Browser camp harness: **47 passed**, including paths, stations, collisions and animation behavior.
+- Inspected prologue at 1280×800 and 390×844, plus camp at 1280×800. Captured screenshots; mobile caption/action fit.
+- Canvas comparisons confirmed fire and tree frames change; reduced-motion trees stay still and leaves are suppressed.
+- Instrumented 512 camp music ticks: 240 tones and 16 noise events, with no per-frame audio scheduling. Actual cave smoke check rendered with no browser errors; observed 11 active audio voices, below the existing 64-voice cap. This is not a long-duration audio soak or a listening evaluation.
+- JavaScript syntax and whitespace checks passed. CodeRabbit review is disabled for this task; no review completed.
+- Existing save fields are retained, including `intro_heater` for the new campfire. No migration reset.
+
+## Shared clearing and terrain correction
+
+The prologue now uses the established camp’s 640×360 coordinates. The western tent, central fire, southeastern lift, old haul road and surviving tree groves persist across both scenes. The early scene groups the journal/radio at the shelter and fuel/repair timber beside the mine generator; three old stumps mark future building sites. Worn dirt blends into grass without outlined path borders. Directional object shadows, shaped canopy shadows and quieter ground texture replace scattered noise. Trees grow in uneven groups, including inside the clearing, and their trunks block movement; canopies fade when they hide the player.
+
+Final browser checks: **48 intro assertions and 47 camp assertions passed**. The intro harness independently flood-filled the new collision map and physically walked all five objectives in **23.6 simulated seconds**, excluding reading. Camp routing still reaches every station. All tree trunk centers block movement in both scenes. Inspected 1280×800 prologue and camp plus 390×844 prologue; no browser errors observed. Syntax and whitespace checks passed. Screenshots: clearing-layout.png, clearing-mobile.png, established-clearing.png. Existing music/particle systems are retained. CodeRabbit review remains disabled by task configuration. Human judgment is still needed on visual style and reading pace; these are not measured by assertion counts.
+
+## Texture and guide-trail follow-up
+
+Ground texture now uses discrete colour steps and pixel clusters instead of smooth ramps. Trees retain the shared grove layout with added bark, branches, needle clusters and irregular leaf edges. Fixed stale guidance: the old cache returned the full starting trail whenever the player remained near any dot. The replacement caches a destination field and traces from the current reachable node, checks the whole connection around corners/trunks, and clears the trail on arrival.
+
+**54 camp checks and 48 prologue checks passed.** Seven added regressions cover discarded trail history, a current starting point, arrival, off-route recovery, trunk-adjacent connections, destination changes and invalid destinations. Desktop (1280×800) and mobile (390×844) screenshots inspected; no horizontal overflow or browser errors observed. Syntax and whitespace checks passed. CodeRabbit review remains disabled by task configuration. Existing saves, music and cave behavior are unchanged by this follow-up.

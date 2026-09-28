@@ -13,6 +13,15 @@
    check('reachable guide trail: '+s.id,path.length>0&&path.every(p=>!hubBlocked(p.x,p.y))&&Math.hypot(path.at(-1).x-s.x,path.at(-1).y-s.y-19)<7);
    for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i];for(let j=0;j<=8;j++)if(hubBlocked(a.x+(b.x-a.x)*j/8,a.y+(b.y-a.y)*j/8))throw Error('Trail crosses building: '+s.id)}
   }
+  CAMP.x=spawn.x;CAMP.y=spawn.y;CAMP.route=null;const originalTrail=campRoute('lift').map(p=>({...p})),middle=originalTrail[Math.floor(originalTrail.length/2)];
+  CAMP.x=middle.x;CAMP.y=middle.y;const advanced=campRoute('lift');
+  check('guide discards walked trail',advanced.length<originalTrail.length&&!advanced.some(p=>p.x===originalTrail[0].x&&p.y===originalTrail[0].y));
+  check('guide starts at current position',Math.hypot(advanced[0].x-CAMP.x,advanced[0].y-CAMP.y)<12);
+  const end=originalTrail.at(-1);CAMP.x=end.x;CAMP.y=end.y;check('guide clears on arrival',campRoute('lift').length===0);
+  CAMP.x=320;CAMP.y=248;const detour=campRoute('lift');check('guide recovers when leaving route',detour.length>0&&Math.hypot(detour[0].x-CAMP.x,detour[0].y-CAMP.y)<12);
+  CAMP.x=243;CAMP.y=124;const trunkTrail=campRoute('lift');check('guide connects safely beside a trunk',trunkTrail.length>0&&trunkTrail.every((p,i)=>{const a=i?trunkTrail[i-1]:CAMP;for(let j=0;j<=16;j++)if(hubBlocked(a.x+(p.x-a.x)*j/16,a.y+(p.y-a.y)*j/16))return false;return true}));
+  CAMP.x=spawn.x;CAMP.y=spawn.y;const changed=campRoute('forge'),forge=hubStations().find(s=>s.id==='forge');check('guide changes destination',Math.hypot(changed.at(-1).x-forge.x,changed.at(-1).y-forge.y-19)<7);
+  check('unknown guide destination is harmless',campRoute('missing').length===0);
   CAMP.x=76;CAMP.y=94;CAMP.vx=CAMP.vy=0;const beforeWalk=CAMP.walk;clearInputs();K.w=true;for(let i=0;i<90;i++)updateCamp(1/60);clearInputs();
   check('movement stops at forge wall',CAMP.y>=89&&CAMP.y<94);check('blocked walking does not advance animation',CAMP.walk-beforeWalk<6&&!CAMP.moving);
   CAMP.x=76;CAMP.y=102;CAMP.vx=CAMP.vy=0;updateCamp(.016);campInteract();

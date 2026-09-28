@@ -33,3 +33,7 @@ No schema or storage-key change. Building discovery, construction and guide mile
 Schema v3 and the original storage key remain unchanged. The existing validated `exp.flags` dictionary now accepts `intro_heater`, `intro_journal`, `intro_generator`, `intro_radio`, `intro_lift` and `intro_done` (boolean flags). An interrupted prologue resumes at the next unfinished action; a reload during the final cage movement replays only that last step. Missing flags are safe. Completed or established characters are not forced into the prologue, and New Game+ retains completion. Menu replay uses only temporary scene state and cannot grant rewards, spend materials, overwrite an expedition checkpoint or mark story progress. First play is mandatory: exiting cannot grant completion. Fresh characters start directly on click-through opening cards; established characters retain their normal menu. No new save fields are required.
 
 A discovered `inheritance` journal entry adds the grandfather’s history. Existing story and quest entries are retained. New cave generation has fewer optional landmarks; checkpoint tile arrays and stored POIs still restore existing expeditions.
+
+The forest-camp presentation retains `intro_heater` as the campfire-completed flag for compatibility. No progress is reset when upgrading from the shed scene.
+
+The shared-clearing revision changes scene coordinates only. Saved prologue steps resume beside the previous landmark in its new location; flags, rewards and camp progress are retained.

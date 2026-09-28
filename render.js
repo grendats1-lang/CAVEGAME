@@ -57,6 +57,7 @@ function render(){
  if(run){drawPlayer(camx,camy);drawPOIs(camx,camy);if(S.exp.ench.pick||S.exp.ench.sword){px(Math.round(P.x-camx)-2,Math.round(P.y-camy)-8,1,3,ench('sword','frostbrand')?'#9ae6fa':ench('pick','prospector')?'#f8d56e':'#a6e0ce')}}
  drawParts(camx,camy,false);
  computeLight(camx,camy);
+ if(run)drawCaveAir(camx,camy);
  cx.imageSmoothingEnabled=true;cx.globalCompositeOperation='multiply';cx.drawImage(lcv,LX0*TS-camx,LY0*TS-camy,LW*TS,LHh*TS);cx.globalCompositeOperation='source-over';cx.imageSmoothingEnabled=false;
  drawParts(camx,camy,true);
  for(let Y=ty0;Y<=ty1;Y++)for(let X=tx0;X<=tx1;X++){if(!inB(X,Y))continue;const i=I(X,Y),t=tiles[i],dc=decor[i],sx=X*TS-camx,sy=Y*TS-camy;
@@ -87,3 +88,15 @@ function drawFX(camx,camy){fx.setTransform(1,0,0,1,0,0);fx.clearRect(0,0,fxc.wid
  if(state==='run'&&P&&!P.dead){let best=null,bd=1e9;for(const i of RUN.act){const l=lifts[i];if(!l)continue;const lx=(l.x+1)*TS,ly=(l.y+1)*TS,d=Math.hypot(lx-P.x,ly-P.y);if(d<bd){bd=d;best=[lx,ly]}}
   if(best){const sx=best[0]-camx,sy=best[1]-camy;if(sx<10||sy<10||sx>VW-10||sy>VH-10){const a=Math.atan2(sy-VH/2,sx-VW/2),mx=VW/2-22,my=VH/2-22,k=Math.min(mx/Math.abs(Math.cos(a)||1e-6),my/Math.abs(Math.sin(a)||1e-6)),ax=(VW/2+Math.cos(a)*k)*s,ay=(VH/2+Math.sin(a)*k)*s;
    fx.save();fx.translate(ax,ay);fx.rotate(a);fx.globalAlpha=.6+.3*Math.sin(TT*4);fx.fillStyle='#e0b860';fx.beginPath();fx.moveTo(8*s,0);fx.lineTo(-4*s,-5*s);fx.lineTo(-4*s,5*s);fx.closePath();fx.fill();fx.restore();fx.globalAlpha=.85;fx.font='bold '+((5*s)|0)+'px Courier New, monospace';fx.fillStyle='#e0c890';fx.strokeStyle='#000';const lab='LIFT '+Math.round(bd/TS*1.5)+'m';fx.strokeText(lab,ax-Math.cos(a)*14*s,ay-Math.sin(a)*10*s);fx.fillText(lab,ax-Math.cos(a)*14*s,ay-Math.sin(a)*10*s);fx.globalAlpha=1}}}}
+
+// Sparse world-anchored motes inherit cave lighting instead of glowing through walls.
+function drawCaveAir(camx,camy){
+ if(S.set.reduced||!S.set.parts)return;
+ const size=72,x0=Math.floor(camx/size),y0=Math.floor(camy/size);
+ for(let yy=y0;yy<=y0+Math.ceil(VH/size);yy++)for(let xx=x0;xx<=x0+Math.ceil(VW/size);xx++){
+  if(ih(xx,yy,71)>S.set.parts*.55)continue;
+  const seed=ih(xx,yy,72),x=xx*size+seed*size+Math.sin(TT*.25+seed*20)*5,y=yy*size+(seed*size+TT*(ACT===1?2:1))%size;
+  if(tAt(Math.floor(x/TS),Math.floor(y/TS))!==T.AIR)continue;
+  cx.fillStyle=ACT===2?'#89876866':ACT===1?'#9da9af66':'#9c917655';cx.fillRect(Math.round(x-camx),Math.round(y-camy),1,1);
+ }
+}

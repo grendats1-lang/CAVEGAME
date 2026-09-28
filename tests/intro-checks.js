@@ -5,11 +5,16 @@
  try{
   storageLocked=true;S=defSave();enterCamp();check('fresh player enters playable arrival',state==='intro'&&INTRO.stage===0&&!P);await tick();
   check('opening starts with narrative card',INTRO.card===0);K.d=true;const openingX=INTRO.x;step(.1);check('opening blocks movement',INTRO.x===openingX);clearInputs();finishIntro(false);check('mandatory intro cannot be skipped',state==='intro'&&!S.exp.flags.intro_done);interactIntro();check('first click reveals second card',INTRO.card===1);interactIntro();check('second click reveals guided scene',INTRO.card===-1);check('no first-play skip button',!document.querySelector('[data-intro=skip]'));
+  check('fire and lift match established camp',INTRO_STEPS[0].x===CAMP_LAYOUT.fire[0]&&INTRO_STEPS[0].y===CAMP_LAYOUT.fire[1]&&INTRO_STEPS[4].x===CAMP_LAYOUT.lift[0]&&INTRO_STEPS[4].y===CAMP_LAYOUT.lift[1]);
   const runStart=S.stats.runs;interactIntro();check('interaction requires proximity',INTRO.stage===0&&!INTRO.done[0]);
   let seconds=0;for(let stage=0;stage<5;stage++){
    const target=INTRO_STEPS[stage];
-   // Cross the lower aisle to avoid the generator, desk and heater furniture.
-   seconds+=walkTo(INTRO.x,211);seconds+=walkTo(target.x,211);seconds+=walkTo(target.x,target.y+20);
+   // Independently flood-fill walkable space, then physically walk the resulting route.
+   const cell=4,W=161,H=91,start=Math.round(INTRO.y/cell)*W+Math.round(INTRO.x/cell),goal=Math.round((target.y+20)/cell)*W+Math.round(target.x/cell),queue=[start],prev=new Int32Array(W*H).fill(-1);prev[start]=start;
+   for(let q=0;q<queue.length&&prev[goal]<0;q++){const at=queue[q],x=at%W,y=Math.floor(at/W);for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const X=x+dx,Y=y+dy,id=Y*W+X;if(X<0||X>=W||Y<0||Y>=H||prev[id]>=0||introBlocked(X*cell,Y*cell))continue;prev[id]=at;queue.push(id)}}
+   check('reachable in shared clearing '+target.id,prev[goal]>=0);const route=[];for(let n=goal;n!==start;n=prev[n])route.push([n%W*cell,Math.floor(n/W)*cell]);route.reverse();
+   // Merge straight segments so the movement controller does not stop at every grid cell.
+   for(let n=0;n<route.length;n++){const a=route[n-1],b=route[n],c=route[n+1];if(a&&c&&b[0]-a[0]===c[0]-b[0]&&b[1]-a[1]===c[1]-b[1])continue;seconds+=walkTo(...b)}
    check('walk reaches '+target.id,introNear());interactIntro();check('persistent beat '+target.id,!!S.exp.flags['intro_'+target.id]);
    if(stage<4){check('reading stops movement '+target.id,INTRO.reading&&!INTRO.moving);interactIntro();check('continue advances '+target.id,INTRO.stage===stage+1)}
   }
@@ -18,7 +23,7 @@
   check('intro completes and journal survives',S.exp.flags.intro_done&&S.exp.flags.briefed&&S.exp.journal.includes('inheritance'));
   check('playable route is comfortably under five minutes',seconds+3.6<90);
   endRun(false);enterCamp('death');check('death returns to normal camp',state==='surface'&&!INTRO);
-  const saved=JSON.stringify(S);beginIntro(true);interactIntro();interactIntro();INTRO.x=98;INTRO.y=181;interactIntro();finishIntro(false);check('replay does not change character or checkpoints',JSON.stringify(S)===saved&&state==='menu');
+  const saved=JSON.stringify(S);beginIntro(true);interactIntro();interactIntro();INTRO.x=INTRO_STEPS[0].x;INTRO.y=INTRO_STEPS[0].y+20;interactIntro();finishIntro(false);check('replay does not change character or checkpoints',JSON.stringify(S)===saved&&state==='menu');
   S=defSave();S.exp.flags.intro_heater=1;S.exp.flags.intro_journal=1;S.exp.journal=['inheritance'];applySaveData(JSON.parse(JSON.stringify(S)));beginIntro(false);check('reload and migration resume next intro beat',INTRO.stage===2&&INTRO.done[0]&&INTRO.done[1]);
   window.dispatchEvent(new Event('blur'));check('focus loss pauses and releases input',INTRO.paused&&!K.d);document.querySelector('[data-intro="act"]').click();check('touch/click resumes intro',!INTRO.paused);
   finishIntro(false);check('resumed intro cannot be skipped',state==='intro'&&!S.exp.flags.intro_done);
